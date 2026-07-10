@@ -73,58 +73,74 @@ export default function FilterBar({
   }, [debouncedQ]);
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
-      <div className="relative min-w-[180px] flex-1 sm:flex-none">
-        <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400" />
-        <input className="input pl-8" placeholder="Search content…" value={q} onChange={(e) => setQ(e.target.value)} />
+    <div className="mb-4 space-y-2.5">
+      <div className="grid gap-2 lg:grid-cols-[minmax(220px,1.4fr)_repeat(2,minmax(0,144px))]">
+        <div className="relative min-w-0">
+          <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400" />
+          <input className="input pl-8" placeholder="Search content…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="min-w-0">
+          <MultiSelect
+            label="Status"
+            options={CONTENT_STATUSES}
+            selected={value.status}
+            onChange={(status) => onChange({ ...value, status })}
+          />
+        </div>
+        <div className="min-w-0">
+          <MultiSelect
+            label="Platform"
+            options={PLATFORMS}
+            selected={value.platform}
+            onChange={(platform) => onChange({ ...value, platform })}
+          />
+        </div>
       </div>
-      <div className="w-36">
-        <MultiSelect label="Status" options={CONTENT_STATUSES} selected={value.status} onChange={(status) => onChange({ ...value, status })} />
+
+      <div className="grid gap-2 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto] lg:items-center">
+        <div className="min-w-0">
+          <select className="input" value={value.pillar} onChange={(e) => onChange({ ...value, pillar: e.target.value })}>
+            <option value="">All pillars</option>
+            {pillars.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-0">
+          <select className="input" value={value.campaign} onChange={(e) => onChange({ ...value, campaign: e.target.value })}>
+            <option value="">All campaigns</option>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-0">
+          <select className="input" value={value.assignee} onChange={(e) => onChange({ ...value, assignee: e.target.value })}>
+            <option value="">Everyone</option>
+            {members.map((m) => (
+              <option key={m.user} value={m.user}>
+                {m.name || m.email || m.user}
+              </option>
+            ))}
+          </select>
+        </div>
+        {(value.q || value.status.length > 0 || value.platform.length > 0 || value.pillar || value.campaign || value.assignee) && (
+          <button
+            type="button"
+            className="justify-self-start text-xs text-gray-400 hover:text-brand lg:justify-self-end"
+            onClick={() => {
+              setQ('');
+              onChange(emptyFilters());
+            }}
+          >
+            Clear filters
+          </button>
+        )}
       </div>
-      <div className="w-36">
-        <MultiSelect
-          label="Platform"
-          options={PLATFORMS}
-          selected={value.platform}
-          onChange={(platform) => onChange({ ...value, platform })}
-        />
-      </div>
-      <select className="input w-36" value={value.pillar} onChange={(e) => onChange({ ...value, pillar: e.target.value })}>
-        <option value="">All pillars</option>
-        {pillars.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
-      <select className="input w-36" value={value.campaign} onChange={(e) => onChange({ ...value, campaign: e.target.value })}>
-        <option value="">All campaigns</option>
-        {campaigns.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
-      <select className="input w-40" value={value.assignee} onChange={(e) => onChange({ ...value, assignee: e.target.value })}>
-        <option value="">Everyone</option>
-        {members.map((m) => (
-          <option key={m.user} value={m.user}>
-            {m.name || m.email || m.user}
-          </option>
-        ))}
-      </select>
-      {(value.q || value.status.length > 0 || value.platform.length > 0 || value.pillar || value.campaign || value.assignee) && (
-        <button
-          type="button"
-          className="text-xs text-gray-400 hover:text-brand"
-          onClick={() => {
-            setQ('');
-            onChange(emptyFilters());
-          }}
-        >
-          Clear filters
-        </button>
-      )}
     </div>
   );
 }

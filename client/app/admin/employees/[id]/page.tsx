@@ -47,15 +47,15 @@ function AddDayForm({ employeeId, defaultDate, onAdded }: { employeeId: string; 
   return (
     <div className="card mb-6 flex flex-wrap items-end gap-3">
       <div className="w-full sm:w-auto">
-        <label className="mb-1 block text-xs font-medium text-gray-500">Date</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Date</label>
         <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500">Assigned task</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Assigned task</label>
         <input className="input" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
       </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500">Brief</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief</label>
         <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
       </div>
       <button className="btn-primary w-full sm:w-auto" disabled={saving || !assignedTask} onClick={handleAdd}>
@@ -278,7 +278,7 @@ export default function EmployeeMonthlyLogPage() {
           />
         </div>
       </div>
-      <p className="mb-4 text-sm text-gray-500">
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         Review the employee&apos;s reported status here, add remarks, and set the verified result. Progress bars use the admin status only.
       </p>
 
@@ -304,11 +304,11 @@ export default function EmployeeMonthlyLogPage() {
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : filteredTasks.length === 0 ? (
-        <p className="text-sm text-gray-500">{selectedDate ? 'No tasks on this day.' : 'No tasks this month yet.'}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{selectedDate ? 'No tasks on this day.' : 'No tasks this month yet.'}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200">
+        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
           <table className="tracker w-full">
             <thead>
               <tr>

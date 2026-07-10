@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, ApiError, API_URL } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
+import { isAdminLike } from '@/lib/roles';
 import EntryFormFields, { type EntryFormValue } from './EntryFormFields';
 import { ContentStatusBadge, ApprovalStatusBadge } from './ContentBadges';
 import type { Campaign, ClientMember, ClientRole, ContentComment, ContentEntry, ContentPillar } from '@/lib/content-types';
@@ -46,7 +47,7 @@ export default function ContentEntryDrawer({
   onDeleted: (id: string) => void;
 }) {
   const { user } = useAuth();
-  const canEdit = myRole === 'owner' || myRole === 'editor';
+  const canEdit = myRole === 'owner' || myRole === 'editor' || myRole === 'viewer';
   const canApprove = myRole === 'owner';
 
   const [entry, setEntry] = useState<ContentEntry | null>(null);
@@ -351,7 +352,7 @@ export default function ContentEntryDrawer({
                           <span className="font-medium">{c.author?.name || 'Unknown'}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] text-gray-400">{new Date(c.createdAt).toLocaleString()}</span>
-                            {(c.author?.id === user?.id || user?.role === 'admin') && (
+                            {(c.author?.id === user?.id || isAdminLike(user?.role)) && (
                               <button
                                 type="button"
                                 onClick={() => handleDeleteComment(c.id)}

@@ -1,10 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { rmSync } from 'node:fs';
+import { existsSync, renameSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { existsSync } from 'node:fs';
 
 const nextDir = resolve('.next');
 const clientRoot = resolve('.');
+const sleepBuffer = new SharedArrayBuffer(4);
+const sleepView = new Int32Array(sleepBuffer);
 
 function resolvePowerShellExecutable() {
   const candidates = [
@@ -30,6 +31,22 @@ function resolvePowerShellExecutable() {
   }
 
   return null;
+}
+
+function sleep(ms) {
+  Atomics.wait(sleepView, 0, 0, ms);
+}
+
+function runPowerShell(script, stdio = 'ignore') {
+  const powershellExecutable = resolvePowerShellExecutable();
+  if (!powershellExecutable) return false;
+
+  try {
+    execFileSync(powershellExecutable, ['-NoProfile', '-Command', script], { stdio });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function stopStaleNextDevProcesses() {
@@ -72,11 +89,51 @@ function stopStaleNextDevProcesses() {
   }
 }
 
-stopStaleNextDevProcesses();
+function clearNextDir() {
+  if (!existsSync(nextDir)) return;
 
-try {
-  rmSync(nextDir, { recursive: true, force: true });
-  console.log('[dev] cleared .next');
-} catch (error) {
-  console.warn('[dev] could not clear .next:', error);
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    try {
+      rmSync(nextDir, { recursive: true, force: true });
+    } catch (error) {
+      console.warn(`[dev] .next clear attempt ${attempt} failed:`, error);
+    }
+
+    if (!existsSync(nextDir)) {
+      console.log('[dev] cleared .next');
+      return;
+    }
+
+    if (process.platform === 'win32') {
+      const escapedNextDir = nextDir.replace(/'/g, "''");
+      const removed = runPowerShell(`Remove-Item -LiteralPath '${escapedNextDir}' -Recurse -Force -ErrorAction SilentlyContinue`);
+      if (removed && !existsSync(nextDir)) {
+        console.log('[dev] cleared .next with PowerShell fallback');
+        return;
+      }
+    }
+
+    sleep(250 * attempt);
+  }
+
+  const staleNextDir = resolve(`.next-stale-${Date.now()}`);
+  try {
+    renameSync(nextDir, staleNextDir);
+    console.warn(`[dev] moved locked .next to ${staleNextDir}`);
+    try {
+      rmSync(staleNextDir, { recursive: true, force: true });
+    } catch {
+      // best effort cleanup; the renamed folder won't be used by Next anymore
+    }
+  } catch (error) {
+    console.warn('[dev] could not move locked .next out of the way:', error);
+  }
+}
+
+stopStaleNextDevProcesses();
+sleep(500);
+clearNextDir();
+
+if (existsSync(nextDir)) {
+  console.warn('[dev] .next still exists before Next startup; dev server may rebuild more slowly');
 }

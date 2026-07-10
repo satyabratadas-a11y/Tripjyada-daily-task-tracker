@@ -3,11 +3,9 @@
 import { useTheme } from '@/lib/ThemeContext';
 
 /**
- * Applies the `dark` class to a wrapper scoped to this subtree only, instead of `<html>` —
- * Tailwind's `dark:` variant just needs `.dark` on any ancestor. Scoping it here keeps dark
- * mode confined to the Content Calendar pages, which were built with `dark:` variants
- * throughout; the older task-tracker pages were not, and would render half-styled if `.dark`
- * ever reached them.
+ * Applies the `dark` class to an authenticated-app subtree instead of `<html>`. Tailwind's
+ * `dark:` variant only needs `.dark` on an ancestor, and scoping it here keeps login/signup
+ * outside the app theme while letting each protected panel opt into the same persisted choice.
  */
 export default function ThemeScope({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();

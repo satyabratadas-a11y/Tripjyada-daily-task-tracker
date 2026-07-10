@@ -26,6 +26,10 @@ const TYPE_ICONS: Record<string, string> = {
   due_soon: 'fa-solid fa-clock',
 };
 
+function isEphemeralNotification(id: string) {
+  return id.startsWith('due-') || id.startsWith('task-');
+}
+
 export default function NotificationBell() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -62,7 +66,7 @@ export default function NotificationBell() {
 
   async function handleClick(n: ContentNotification) {
     setOpen(false);
-    if (!n.id.startsWith('due-') && !n.read) {
+    if (!isEphemeralNotification(n.id) && !n.read) {
       try {
         await api.patch(`/api/notifications/${n.id}/read`);
         setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
@@ -77,8 +81,11 @@ export default function NotificationBell() {
   async function handleMarkAllRead() {
     try {
       await api.patch('/api/notifications/read-all');
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      setUnreadCount(0);
+      const remainingActionItems = notifications.filter((n) => isEphemeralNotification(n.id) && !n.read).length;
+      setNotifications((prev) =>
+        prev.map((n) => (isEphemeralNotification(n.id) ? n : { ...n, read: true }))
+      );
+      setUnreadCount(remainingActionItems);
     } catch {
       // ignore
     }

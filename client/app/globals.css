@@ -100,7 +100,7 @@ table.tracker td > * {
   }
 
   table.tracker tr {
-    @apply border-b border-gray-200 bg-white p-4 last:border-b-0;
+    @apply border-b border-gray-200 bg-white p-4 last:border-b-0 dark:border-white/10 dark:bg-ink-light;
   }
 
   table.tracker td {
@@ -109,7 +109,7 @@ table.tracker td > * {
 
   table.tracker td::before {
     content: attr(data-label);
-    @apply min-w-[6.5rem] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400;
+    @apply min-w-[6.5rem] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500;
   }
 
   table.tracker td:last-child {

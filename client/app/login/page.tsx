@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/AuthContext';
 import PasswordInput from '@/components/PasswordInput';
 import InputIcon from '@/components/InputIcon';
 import type { User } from '@/lib/types';
+import { homeRouteForRole } from '@/lib/roles';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function LoginPage() {
     try {
       const { user } = await api.post<{ user: User }>('/api/auth/login', { email, password });
       await refresh();
-      router.replace(user.role === 'admin' ? '/admin/today' : '/employee/today');
+      router.replace(homeRouteForRole(user.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed');
     } finally {

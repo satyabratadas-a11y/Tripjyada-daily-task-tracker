@@ -10,7 +10,6 @@ import BulkToolbar from '@/components/content/BulkToolbar';
 import ExportMenu from '@/components/content/ExportMenu';
 import NewEntryModal from '@/components/content/NewEntryModal';
 import ContentEntryDrawer from '@/components/content/ContentEntryDrawer';
-import AIPanel from '@/components/content/AIPanel';
 import { ApprovalStatusBadge, PillarBadge } from '@/components/content/ContentBadges';
 import {
   CONTENT_FORMATS,
@@ -157,10 +156,9 @@ export default function TableViewPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openEntryId, setOpenEntryId] = useState<string | null>(null);
   const [showNewEntry, setShowNewEntry] = useState(false);
-  const [showAIPanel, setShowAIPanel] = useState(false);
 
   const query = useMemo(() => buildEntryQuery(filters, range.from, range.to), [filters, range]);
-  const canEdit = client.myRole === 'owner' || client.myRole === 'editor';
+  const canEdit = client.myRole === 'owner' || client.myRole === 'editor' || client.myRole === 'viewer';
   const columnCount = (canEdit ? 1 : 0) + 14;
 
   async function load() {
@@ -243,11 +241,6 @@ export default function TableViewPage() {
         </div>
         <div className="flex items-center gap-2">
           <ExportMenu clientId={clientId} queryString={query} />
-          {canEdit && (
-            <button className="btn-secondary" onClick={() => setShowAIPanel(true)}>
-              <i className="fa-solid fa-wand-magic-sparkles" /> AI 30-day plan
-            </button>
-          )}
           {canEdit && (
             <button className="btn-primary" onClick={() => setShowNewEntry(true)}>
               <i className="fa-solid fa-plus" /> Add row
@@ -456,16 +449,6 @@ export default function TableViewPage() {
           onClose={() => setOpenEntryId(null)}
           onChanged={updateEntryLocal}
           onDeleted={(id) => setEntries((prev) => prev.filter((e) => e.id !== id))}
-        />
-      )}
-
-      {showAIPanel && (
-        <AIPanel
-          clientId={clientId}
-          pillars={pillars}
-          campaigns={campaigns}
-          onClose={() => setShowAIPanel(false)}
-          onImported={() => load()}
         />
       )}
     </div>

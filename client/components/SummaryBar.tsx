@@ -13,8 +13,8 @@ export default function SummaryBar({ stats }: { stats: Stat[] }) {
             <span className="h-2 w-2 rounded-full bg-white/90" />
           </span>
           <div className="min-w-0">
-            <p className="text-lg font-semibold leading-tight text-gray-900">{s.value}</p>
-            <p className="truncate text-xs text-gray-500">{s.label}</p>
+            <p className="text-lg font-semibold leading-tight text-gray-900 dark:text-gray-100">{s.value}</p>
+            <p className="truncate text-xs text-gray-500 dark:text-gray-400">{s.label}</p>
           </div>
         </div>
       ))}

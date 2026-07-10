@@ -70,7 +70,7 @@ function AssignForm({ employeeId, date, onAssigned }: { employeeId: string; date
   }
 
   return (
-    <div className="space-y-2 rounded-md border border-dashed border-gray-300 p-3">
+    <div className="space-y-2 rounded-md border border-dashed border-gray-300 p-3 dark:border-white/10">
       <input
         className="input"
         placeholder="Task to assign"
@@ -134,7 +134,7 @@ function TaskReviewCard({ task, onSaved }: { task: Task; onSaved: (task: Task) =
       className={`rounded-lg border p-4 ${
         adminStatus === 'flagged'
           ? 'border-status-flagged bg-status-flagged/5'
-          : 'border-gray-200 bg-white'
+          : 'border-gray-200 bg-white dark:border-white/10 dark:bg-ink-light'
       }`}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
@@ -155,7 +155,7 @@ function TaskReviewCard({ task, onSaved }: { task: Task; onSaved: (task: Task) =
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-        <span className="font-medium uppercase text-gray-500">Employee update</span>
+        <span className="font-medium uppercase text-gray-500 dark:text-gray-400">Employee update</span>
         <MemberStatusBadge value={task.memberStatus} />
         {task.proofLink && (
           <a href={task.proofLink} target="_blank" rel="noreferrer" className="text-brand hover:underline">
@@ -165,7 +165,7 @@ function TaskReviewCard({ task, onSaved }: { task: Task; onSaved: (task: Task) =
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase text-gray-500">Admin status</span>
+        <span className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Admin status</span>
         <select
           className="input w-full sm:max-w-[220px]"
           value={adminStatus}
@@ -190,7 +190,7 @@ function TaskReviewCard({ task, onSaved }: { task: Task; onSaved: (task: Task) =
       {error && <p className="mt-2 text-xs text-status-flagged">{error}</p>}
 
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           This admin status affects progress reports and graphs.
         </p>
         <button className="btn-primary w-full sm:w-auto" disabled={saving || !dirty} onClick={handleSave}>
@@ -226,9 +226,9 @@ function EmployeeSection({
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xl font-semibold text-brand">{row.employee.name}</p>
-          <p className="text-sm text-gray-500">{row.employee.jobTitle || 'Employee'}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{row.employee.jobTitle || 'Employee'}</p>
         </div>
-        <div className="text-xs text-gray-500 lg:text-right">
+        <div className="text-xs text-gray-500 dark:text-gray-400 lg:text-right">
           <p>{row.tasks.length} task(s)</p>
           <Link href={reviewHref} className="mt-1 inline-block font-medium text-brand hover:underline">
             Open review
@@ -237,7 +237,7 @@ function EmployeeSection({
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2 text-xs">
-        <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-gray-700">
+        <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-200">
           Completed: {completed}
         </span>
         <span className="rounded-full border border-status-progress/40 bg-status-progress/10 px-3 py-1 text-amber-900">
@@ -248,15 +248,15 @@ function EmployeeSection({
         </span>
       </div>
 
-      <div className="rounded-lg border border-gray-100 bg-gray-50/50 p-3">
+      <div className="rounded-lg border border-gray-100 bg-gray-50/50 p-3 dark:border-white/10 dark:bg-white/5">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="text-sm font-medium text-gray-700">Tasks for {formatTaskDate(date)}</p>
-          {row.tasks.length > 3 && <p className="text-xs text-gray-500">Scroll to review all tasks</p>}
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Tasks for {formatTaskDate(date)}</p>
+          {row.tasks.length > 3 && <p className="text-xs text-gray-500 dark:text-gray-400">Scroll to review all tasks</p>}
         </div>
 
         <div className="max-h-[420px] space-y-3 overflow-y-auto pr-2">
           {row.tasks.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-300 bg-white p-4 text-sm text-gray-500">
+            <div className="rounded-lg border border-dashed border-gray-300 bg-white p-4 text-sm text-gray-500 dark:border-white/10 dark:bg-ink-light dark:text-gray-400">
               No tasks yet for this date.
             </div>
           ) : (
@@ -356,17 +356,17 @@ export default function AdminTodayPage() {
       <div className="mb-6 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_360px] 2xl:items-end">
         <div className="min-w-0">
           <h1 className="text-lg font-semibold">Team Tasks — Live Panel</h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {formatTaskDate(date)}
             {isToday && <span className="ml-2 rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">Today</span>}
           </p>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Admin status and remarks here directly affect the progress graph and progress bars in Reports.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-1">
           <div className="w-full">
-            <label className="mb-1 block text-xs font-medium text-gray-500">Date</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Date</label>
             <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           {!isToday && (
@@ -375,7 +375,7 @@ export default function AdminTodayPage() {
             </button>
           )}
           <div className="w-full">
-            <label className="mb-1 block text-xs font-medium text-gray-500">Filter by name</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Filter by name</label>
             <input
               className="input"
               placeholder="Search employees…"
@@ -388,10 +388,10 @@ export default function AdminTodayPage() {
 
       {!loading && <SummaryBar stats={stats} />}
       {error && <p className="text-sm text-status-flagged">{error}</p>}
-      {loading && <p className="text-sm text-gray-500">Loading…</p>}
+      {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>}
 
       {!loading && filteredRows.length === 0 && (
-        <p className="text-sm text-gray-500">No employees match &ldquo;{nameFilter}&rdquo;.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">No employees match &ldquo;{nameFilter}&rdquo;.</p>
       )}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">

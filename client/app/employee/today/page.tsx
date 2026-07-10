@@ -55,7 +55,7 @@ function AddTaskForm({ onAdded }: { onAdded: () => void }) {
 
   return (
     <div className="card mb-6 max-w-xl space-y-2">
-      <p className="text-xs font-medium uppercase text-gray-500">New task</p>
+      <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">New task</p>
       <input
         className="input"
         placeholder="What are you working on?"
@@ -142,7 +142,7 @@ function TaskCard({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task)
       {editableTitle ? (
         <input className="input" placeholder="Brief / details" value={brief} onChange={(e) => setBrief(e.target.value)} />
       ) : (
-        task.brief && <p className="text-sm text-gray-600">{task.brief}</p>
+        task.brief && <p className="text-sm text-gray-600 dark:text-gray-300">{task.brief}</p>
       )}
 
       {isFlagged && (
@@ -154,11 +154,11 @@ function TaskCard({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task)
       )}
 
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium uppercase text-gray-500">Verified status</span>
+        <span className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Verified status</span>
         <AdminStatusBadge value={task.adminStatus} />
       </div>
       {task.reviewerNotes && !isFlagged && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           <span className="font-medium">Reviewer note: </span>
           {task.reviewerNotes}
         </p>
@@ -168,11 +168,11 @@ function TaskCard({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task)
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Proof link</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Proof link</label>
           <input className="input" value={proofLink} onChange={(e) => setProofLink(e.target.value)} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Your status</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Your status</label>
           <select className="input" value={selectValue} onChange={(e) => setMemberStatus(e.target.value as Task['memberStatus'])}>
             <option value="" disabled>
               Select your update
@@ -241,10 +241,10 @@ export default function EmployeeTodayPage() {
   return (
     <div>
       <h1 className="mb-1 text-lg font-semibold">Today&apos;s Tasks</h1>
-      <p className="mb-4 text-sm text-gray-500">
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
       </p>
-      <p className="mb-4 text-sm text-gray-500">
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         Your update is only `On Progress` or `Done`. Team progress is calculated from the admin&apos;s verified status.
       </p>
 
@@ -253,9 +253,9 @@ export default function EmployeeTodayPage() {
       <AddTaskForm onAdded={load} />
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : tasks.length === 0 ? (
-        <div className="card text-sm text-gray-500">
+        <div className="card text-sm text-gray-500 dark:text-gray-400">
           No tasks yet for today — an admin can assign one, or add your own above.
         </div>
       ) : (

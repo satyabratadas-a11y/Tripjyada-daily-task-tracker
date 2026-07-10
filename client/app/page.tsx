@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import { homeRouteForRole } from '@/lib/roles';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -12,10 +13,8 @@ export default function HomePage() {
     if (loading) return;
     if (!user) {
       router.replace('/login');
-    } else if (user.role === 'admin') {
-      router.replace('/admin/today');
     } else {
-      router.replace('/employee/today');
+      router.replace(homeRouteForRole(user.role));
     }
   }, [user, loading, router]);
 

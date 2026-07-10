@@ -1,13 +1,57 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
-import type { User } from '@/lib/types';
+import { formatRoleLabel, isSuperAdmin } from '@/lib/roles';
+import type { Role, User, UserStatus } from '@/lib/types';
+
+const ROLE_OPTIONS: Role[] = ['employee', 'admin', 'super_admin'];
+const STATUS_OPTIONS: UserStatus[] = ['active', 'disabled'];
+
+function RoleSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: Role;
+  onChange: (value: Role) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <select className="input" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as Role)}>
+      {ROLE_OPTIONS.map((role) => (
+        <option key={role} value={role}>
+          {formatRoleLabel(role)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function StatusSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: UserStatus;
+  onChange: (value: UserStatus) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <select className="input" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as UserStatus)}>
+      {STATUS_OPTIONS.map((status) => (
+        <option key={status} value={status}>
+          {formatRoleLabel(status)}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function ApproveRow({ user, onDone }: { user: User; onDone: () => void }) {
-  const [role, setRole] = useState<'admin' | 'employee'>('employee');
+  const [role, setRole] = useState<Role>('employee');
   const [jobTitle, setJobTitle] = useState(user.jobTitle);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -34,38 +78,52 @@ function ApproveRow({ user, onDone }: { user: User; onDone: () => void }) {
         <input className="input" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
       </td>
       <td data-label="Role">
-        <select className="input" value={role} onChange={(e) => setRole(e.target.value as 'admin' | 'employee')}>
-          <option value="employee">Employee</option>
-          <option value="admin">Admin</option>
-        </select>
+        <RoleSelect value={role} onChange={setRole} />
       </td>
       <td data-label="Actions">
         <button className="btn-primary w-full sm:w-auto" disabled={saving} onClick={approve}>
           {saving ? 'Approving…' : 'Approve'}
         </button>
-        {error && <p className="text-xs text-status-flagged">{error}</p>}
+        {error && <p className="mt-1 text-xs text-status-flagged">{error}</p>}
       </td>
     </tr>
   );
 }
 
-function ActiveRow({ user, onDone }: { user: User; onDone: () => void }) {
+function ActiveRow({
+  user,
+  currentUserId,
+  onDone,
+}: {
+  user: User;
+  currentUserId?: string;
+  onDone: () => void;
+}) {
+  const [name, setName] = useState(user.name);
+  const [jobTitle, setJobTitle] = useState(user.jobTitle);
+  const [role, setRole] = useState<Role>(user.role);
+  const [status, setStatus] = useState<UserStatus>(user.status);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
+  const isSelf = currentUserId === user.id;
+  const isDirty = name !== user.name || jobTitle !== user.jobTitle || role !== user.role || status !== user.status;
 
-  async function toggleDisabled() {
+  async function save() {
     setSaving(true);
     setError('');
     try {
       await api.patch(`/api/admin/users/${user.id}`, {
-        status: user.status === 'disabled' ? 'active' : 'disabled',
+        name,
+        jobTitle,
+        role,
+        status,
       });
       onDone();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to update status');
+      setError(err instanceof ApiError ? err.message : 'Failed to update account');
     } finally {
       setSaving(false);
     }
@@ -84,9 +142,18 @@ function ActiveRow({ user, onDone }: { user: User; onDone: () => void }) {
       </td>
       <td data-label="Employee ID">{user.employeeCode}</td>
       <td data-label="Email">{user.email}</td>
-      <td data-label="Job title">{user.jobTitle}</td>
-      <td data-label="Role" className="capitalize">{user.role}</td>
-      <td data-label="Status" className="capitalize">{user.status}</td>
+      <td data-label="Account">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" />
+          <input className="input" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="Job title" />
+        </div>
+      </td>
+      <td data-label="Role">
+        <RoleSelect value={role} onChange={setRole} disabled={isSelf} />
+      </td>
+      <td data-label="Status">
+        <StatusSelect value={status} onChange={setStatus} disabled={isSelf} />
+      </td>
       <td data-label="Actions">
         <div className="flex flex-wrap gap-2">
           {user.role === 'employee' && (
@@ -94,10 +161,11 @@ function ActiveRow({ user, onDone }: { user: User; onDone: () => void }) {
               Review tasks
             </Link>
           )}
-          <button className="btn-secondary" disabled={saving} onClick={toggleDisabled}>
-            {user.status === 'disabled' ? 'Re-enable' : 'Disable'}
+          <button className="btn-primary" disabled={saving || !isDirty} onClick={save}>
+            {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
+        {isSelf && <p className="mt-1 text-xs text-gray-400">Your own role and status stay locked for safety.</p>}
         {error && <p className="mt-1 text-xs text-status-flagged">{error}</p>}
       </td>
     </tr>
@@ -105,7 +173,7 @@ function ActiveRow({ user, onDone }: { user: User; onDone: () => void }) {
 }
 
 export default function AdminUsersPage() {
-  const { refresh } = useAuth();
+  const { user, refresh, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -119,6 +187,7 @@ export default function AdminUsersPage() {
     } catch (err) {
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
         await refresh();
+        setError(err.message);
       } else {
         setError(err instanceof ApiError ? err.message : 'Failed to load users');
       }
@@ -128,24 +197,47 @@ export default function AdminUsersPage() {
   }
 
   useEffect(() => {
-    load();
+    if (!authLoading && isSuperAdmin(user?.role)) {
+      load();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, user?.role]);
+
+  if (!authLoading && !isSuperAdmin(user?.role)) {
+    return (
+      <div className="card max-w-3xl space-y-2">
+        <h1 className="text-lg font-semibold">Platform Access Control</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Only a super admin can approve signups, promote admins, or change platform roles.
+        </p>
+      </div>
+    );
+  }
 
   const pending = users.filter((u) => u.status === 'pending');
   const others = users.filter((u) => u.status !== 'pending');
 
   return (
     <div className="space-y-8">
-      {error && <p className="text-sm text-status-flagged">{error}</p>}
       <div>
-        <h1 className="mb-4 text-lg font-semibold">Pending approvals</h1>
+        <h1 className="text-lg font-semibold">Platform Access Control</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Approve new accounts, assign employee, admin, or super admin privileges, and manage the platform hierarchy.
+        </p>
+      </div>
+
+      {error && <p className="text-sm text-status-flagged">{error}</p>}
+
+      <div>
+        <h2 className="mb-4 text-lg font-semibold">Pending approvals</h2>
         {loading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
         ) : pending.length === 0 ? (
-          <p className="text-sm text-gray-500">No pending signups.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No pending signups.</p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-gray-200">
+          <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
             <table className="tracker w-full">
               <thead>
                 <tr>
@@ -158,8 +250,8 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {pending.map((u) => (
-                  <ApproveRow key={u.id} user={u} onDone={load} />
+                {pending.map((pendingUser) => (
+                  <ApproveRow key={pendingUser.id} user={pendingUser} onDone={load} />
                 ))}
               </tbody>
             </table>
@@ -168,23 +260,23 @@ export default function AdminUsersPage() {
       </div>
 
       <div>
-        <h1 className="mb-4 text-lg font-semibold">All users</h1>
-        <div className="overflow-hidden rounded-lg border border-gray-200">
+        <h2 className="mb-4 text-lg font-semibold">All users</h2>
+        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
           <table className="tracker w-full">
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Employee ID</th>
                 <th>Email</th>
-                <th>Job title</th>
+                <th>Account</th>
                 <th>Role</th>
                 <th>Status</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {others.map((u) => (
-                <ActiveRow key={u.id} user={u} onDone={load} />
+              {others.map((activeUser) => (
+                <ActiveRow key={activeUser.id} user={activeUser} currentUserId={user?.id} onDone={load} />
               ))}
             </tbody>
           </table>

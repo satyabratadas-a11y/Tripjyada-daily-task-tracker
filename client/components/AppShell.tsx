@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
+import { formatRoleLabel } from '@/lib/roles';
 
 interface NavItem {
   href: string;
@@ -73,7 +74,7 @@ export default function AppShell({
             <p className="truncate text-sm font-semibold text-white">Tripjyada Task Tracker</p>
             {user && (
               <p className="truncate text-xs text-gray-400">
-                {user.name} · {user.role}
+                {user.name} · {formatRoleLabel(user.role)}
               </p>
             )}
           </div>

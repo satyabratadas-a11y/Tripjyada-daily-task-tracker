@@ -46,7 +46,7 @@ function StatusLegend() {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
       {TIERS.map((t) => (
-        <span key={t.key} className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+        <span key={t.key} className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <span className={`h-2 w-2 shrink-0 rounded-full ${t.dot}`} />
           {t.label}
         </span>
@@ -74,11 +74,11 @@ function ProgressBar({
       <div className="flex items-center justify-between gap-3">
         {!compact && (
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-gray-900">{label}</p>
-            {detail && <p className="text-xs text-gray-500">{detail}</p>}
+            <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{label}</p>
+            {detail && <p className="text-xs text-gray-500 dark:text-gray-400">{detail}</p>}
           </div>
         )}
-        <p className="text-sm font-semibold text-gray-700">{pct}%</p>
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{pct}%</p>
       </div>
       <div className={`h-2.5 overflow-hidden rounded-full ${tier.track}`}>
         <div className={`h-full rounded-full ${tier.fill}`} style={{ width: `${width}%` }} />
@@ -96,23 +96,23 @@ function ProgressGraph({ rows }: { rows: ReportRow[] }) {
     <div className="card">
       <div className="mb-1">
         <h2 className="text-base font-semibold">Progress Graph</h2>
-        <p className="text-sm text-gray-500">Each bar is calculated from the admin&apos;s verified task status.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Each bar is calculated from the admin&apos;s verified task status.</p>
       </div>
       <div className="mb-5">
         <StatusLegend />
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2">
-        <div className="flex h-56 shrink-0 flex-col justify-between text-right text-[11px] leading-none text-gray-400">
+        <div className="flex h-56 shrink-0 flex-col justify-between text-right text-[11px] leading-none text-gray-400 dark:text-gray-500">
           {AXIS_TICKS.map((t) => (
             <span key={t}>{t}</span>
           ))}
         </div>
 
         <div className="flex-1">
-          <div className="relative h-56 border-l border-gray-200">
+          <div className="relative h-56 border-l border-gray-200 dark:border-white/10">
             {AXIS_TICKS.map((t) => (
-              <div key={t} className="absolute inset-x-0 border-t border-gray-100" style={{ bottom: `${t}%` }} />
+              <div key={t} className="absolute inset-x-0 border-t border-gray-100 dark:border-white/10" style={{ bottom: `${t}%` }} />
             ))}
 
             <div className="relative flex h-full items-end gap-5 pl-4">
@@ -132,32 +132,32 @@ function ProgressGraph({ rows }: { rows: ReportRow[] }) {
                     onBlur={() => setHovered((cur) => (cur === row.employee.id ? null : cur))}
                   >
                     {isActive && (
-                      <div className="absolute bottom-full z-10 mb-3 w-44 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
-                        <p className="truncate text-xs font-semibold text-gray-900">{row.employee.name}</p>
-                        <p className="mb-2 mt-0.5 text-[11px] text-gray-500">{row.progressPct}% overall</p>
+                      <div className="absolute bottom-full z-10 mb-3 w-44 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg dark:border-white/10 dark:bg-ink-light">
+                        <p className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{row.employee.name}</p>
+                        <p className="mb-2 mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">{row.progressPct}% overall</p>
                         <dl className="space-y-1 text-[11px]">
                           <div className="flex items-center justify-between gap-2">
-                            <dt className="text-gray-500">Completed</dt>
-                            <dd className="font-medium text-gray-900">{row.completed}</dd>
+                            <dt className="text-gray-500 dark:text-gray-400">Completed</dt>
+                            <dd className="font-medium text-gray-900 dark:text-gray-100">{row.completed}</dd>
                           </div>
                           <div className="flex items-center justify-between gap-2">
-                            <dt className="text-gray-500">On progress</dt>
-                            <dd className="font-medium text-gray-900">{row.onProgress}</dd>
+                            <dt className="text-gray-500 dark:text-gray-400">On progress</dt>
+                            <dd className="font-medium text-gray-900 dark:text-gray-100">{row.onProgress}</dd>
                           </div>
                           <div className="flex items-center justify-between gap-2">
-                            <dt className="text-gray-500">Incomplete</dt>
-                            <dd className="font-medium text-gray-900">{row.incomplete}</dd>
+                            <dt className="text-gray-500 dark:text-gray-400">Incomplete</dt>
+                            <dd className="font-medium text-gray-900 dark:text-gray-100">{row.incomplete}</dd>
                           </div>
                           <div className="flex items-center justify-between gap-2">
-                            <dt className="text-gray-500">Flagged</dt>
-                            <dd className="font-medium text-gray-900">{row.flags}</dd>
+                            <dt className="text-gray-500 dark:text-gray-400">Flagged</dt>
+                            <dd className="font-medium text-gray-900 dark:text-gray-100">{row.flags}</dd>
                           </div>
                         </dl>
                       </div>
                     )}
 
                     <span
-                      className="absolute whitespace-nowrap text-[11px] font-medium text-gray-700"
+                      className="absolute whitespace-nowrap text-[11px] font-medium text-gray-700 dark:text-gray-200"
                       style={{ bottom: `calc(${pct}% + 6px)` }}
                     >
                       {row.progressPct}%
@@ -175,7 +175,7 @@ function ProgressGraph({ rows }: { rows: ReportRow[] }) {
 
           <div className="flex gap-5 pl-4 pt-2">
             {rows.map((row) => (
-              <p key={row.employee.id} className="min-w-[56px] flex-1 truncate text-center text-xs font-medium text-gray-700">
+              <p key={row.employee.id} className="min-w-[56px] flex-1 truncate text-center text-xs font-medium text-gray-700 dark:text-gray-200">
                 {row.employee.name}
               </p>
             ))}
@@ -234,7 +234,7 @@ export default function ReportsPage() {
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-lg font-semibold">Reports</h1>
-          <p className="text-sm text-gray-500">Progress graph and progress bars based on admin task status.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Progress graph and progress bars based on admin task status.</p>
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
@@ -264,7 +264,7 @@ export default function ReportsPage() {
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
 
       {loading || !data ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : (
         <>
           <SummaryBar stats={summaryStats} />
@@ -275,7 +275,7 @@ export default function ReportsPage() {
             <div className="card">
               <div className="mb-4">
                 <h2 className="text-base font-semibold">Progress Bars</h2>
-                <p className="text-sm text-gray-500">These bars update when admin changes task status.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">These bars update when admin changes task status.</p>
               </div>
 
               <div className="space-y-4">
@@ -297,7 +297,7 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-gray-200">
+          <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
             <table className="tracker w-full">
               <thead>
                 <tr>
@@ -328,7 +328,7 @@ export default function ReportsPage() {
                     <td data-label="Integrity">{row.integrity}</td>
                   </tr>
                 ))}
-                <tr className="bg-gray-50 font-medium">
+                <tr className="bg-gray-50 font-medium dark:bg-white/5">
                   <td data-label="Team member">TEAM AVERAGE</td>
                   <td data-label="Role"></td>
                   <td data-label="Assigned">{data.team.assignedDays}</td>
@@ -345,7 +345,7 @@ export default function ReportsPage() {
             </table>
           </div>
 
-          <div className="mt-8 space-y-2 text-sm text-gray-600">
+          <div className="mt-8 space-y-2 text-sm text-gray-600 dark:text-gray-300">
             <p>Manager sign-off: ____________________</p>
             <p>HR sign-off: ____________________</p>
           </div>

@@ -128,15 +128,3 @@ export interface ContentNotification {
   read: boolean;
   createdAt: string;
 }
-
-export interface AIGeneratedCalendarRow {
-  dayOffset: number;
-  date: string;
-  format: ContentFormat;
-  platform: Platform;
-  pillar: string;
-  idea: string;
-  hook: string;
-  caption: string;
-  cta: string;
-}

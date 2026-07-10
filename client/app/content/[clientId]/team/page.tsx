@@ -5,12 +5,13 @@ import { useParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { useClientCalendar } from '@/lib/ClientCalendarContext';
+import { isAdminLike } from '@/lib/roles';
 import type { ClientRole, ContentClient } from '@/lib/content-types';
 
 const ROLE_DESCRIPTIONS: Record<ClientRole, string> = {
-  owner: 'Full control — manage pillars, campaigns, team, and approvals.',
-  editor: 'Create, edit, schedule, and comment on content — cannot approve.',
-  viewer: 'Read-only access, can leave comments.',
+  owner: 'Full calendar control — manage client settings, pillars, campaigns, content, and approvals.',
+  editor: 'Manage client settings, pillars, campaigns, and content — cannot edit approvals or team hierarchy.',
+  viewer: 'Can manage calendar entries, monthly and weekly planning, AI content tools, pillars, campaigns, and client setup — cannot edit approvals or team hierarchy.',
 };
 
 export default function TeamPage() {
@@ -18,7 +19,7 @@ export default function TeamPage() {
   const clientId = params.clientId;
   const { user } = useAuth();
   const { client, refresh } = useClientCalendar();
-  const canManage = client.myRole === 'owner';
+  const canManage = isAdminLike(user?.role);
 
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<ClientRole>('editor');
@@ -126,6 +127,10 @@ export default function TeamPage() {
 
       <div className="card mt-5">
         <p className="mb-2 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Role permissions</p>
+        <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+          Employees can work on content, pillars, campaigns, and calendar setup by default. Only admins and super admins can
+          assign or change the owner, editor, and viewer hierarchy here.
+        </p>
         <ul className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
           {(Object.keys(ROLE_DESCRIPTIONS) as ClientRole[]).map((r) => (
             <li key={r}>

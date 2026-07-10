@@ -205,8 +205,8 @@ export default function AdminAuditPage() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold">Audit Log</h1>
-          <p className="text-sm text-gray-500">Recent admin actions across users and tasks.</p>
-          <p className="text-xs text-gray-400">Refreshes automatically every 15 seconds.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Recent admin and super admin actions across users and tasks.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Refreshes automatically every 15 seconds.</p>
         </div>
         <button className="btn-secondary" disabled={loading || refreshing} onClick={() => load(false, { from, to })}>
           {refreshing ? 'Refreshing…' : 'Refresh'}
@@ -215,7 +215,7 @@ export default function AdminAuditPage() {
 
       <div className="card mb-6 space-y-4">
         <div>
-          <p className="mb-2 text-xs font-medium uppercase text-gray-400">Filter by date</p>
+          <p className="mb-2 text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Filter by date</p>
           <div className="flex flex-wrap items-center gap-2">
             {PRESETS.map((p) => (
               <button
@@ -225,7 +225,7 @@ export default function AdminAuditPage() {
                 className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                   activePreset === p.key
                     ? 'border-brand bg-brand text-white'
-                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:bg-ink-light dark:text-gray-300 dark:hover:bg-white/10'
                 }`}
               >
                 {p.label}
@@ -236,7 +236,7 @@ export default function AdminAuditPage() {
 
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase text-gray-400" htmlFor="audit-from">
+            <label className="mb-1 block text-xs font-medium uppercase text-gray-400 dark:text-gray-500" htmlFor="audit-from">
               From
             </label>
             <input
@@ -252,7 +252,7 @@ export default function AdminAuditPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase text-gray-400" htmlFor="audit-to">
+            <label className="mb-1 block text-xs font-medium uppercase text-gray-400 dark:text-gray-500" htmlFor="audit-to">
               To
             </label>
             <input
@@ -273,10 +273,10 @@ export default function AdminAuditPage() {
             </button>
           )}
 
-          <div className="ml-auto text-sm text-gray-500">
+          <div className="ml-auto text-sm text-gray-500 dark:text-gray-400">
             {!loading && (
               <>
-                <span className="font-medium text-gray-700">{logs.length}</span> {logs.length === 1 ? 'entry' : 'entries'}
+                <span className="font-medium text-gray-700 dark:text-gray-200">{logs.length}</span> {logs.length === 1 ? 'entry' : 'entries'}
                 {rangeLabel && <span> · {rangeLabel}</span>}
               </>
             )}
@@ -287,12 +287,12 @@ export default function AdminAuditPage() {
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : error ? (
-        <p className="text-sm text-gray-500">The audit log could not be loaded right now.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">The audit log could not be loaded right now.</p>
       ) : logs.length === 0 ? (
         <div className="card text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {hasFilters ? 'No audit entries match this date range.' : 'No audit entries yet.'}
           </p>
           {hasFilters && (
@@ -305,15 +305,15 @@ export default function AdminAuditPage() {
         <div className="space-y-8">
           {groups.map((group) => (
             <div key={group.key}>
-              <div className="sticky top-0 z-10 mb-3 flex items-center gap-3 bg-gray-50 py-2">
-                <h2 className="text-sm font-semibold text-gray-700">{dayLabel(group.key, group.date)}</h2>
-                <span className="text-xs text-gray-400">
+              <div className="sticky top-0 z-10 mb-3 flex items-center gap-3 bg-gray-50 py-2 dark:bg-ink">
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{dayLabel(group.key, group.date)}</h2>
+                <span className="text-xs text-gray-400 dark:text-gray-500">
                   {group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}
                 </span>
-                <div className="h-px flex-1 bg-gray-200" />
+                <div className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
               </div>
 
-              <div className="space-y-4 border-l-2 border-gray-100 pl-5 sm:pl-6">
+              <div className="space-y-4 border-l-2 border-gray-100 pl-5 dark:border-white/10 sm:pl-6">
                 {group.entries.map((log) => {
                   const changes = Object.entries(log.changes || {});
                   const metadataEntries = Object.entries(log.metadata || {}).filter(
@@ -332,24 +332,24 @@ export default function AdminAuditPage() {
                           <div className="min-w-0 space-y-4">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <p className="break-words text-lg font-semibold leading-tight text-gray-900">{log.summary}</p>
+                                <p className="break-words text-lg font-semibold leading-tight text-gray-900 dark:text-gray-100">{log.summary}</p>
                                 <div className="xl:hidden">
                                   <ActionBadge action={log.action} />
                                 </div>
                               </div>
-                              <p className="mt-2 text-sm text-gray-500">
+                              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                                 {log.actor.name} ({formatLabel(log.actor.role)}) · {new Date(log.createdAt).toLocaleString()}
                               </p>
                             </div>
 
                             <div className="grid gap-3 text-sm sm:grid-cols-2 lg:max-w-2xl">
                               <div>
-                                <p className="text-xs font-medium uppercase text-gray-400">Target</p>
-                                <p className="break-words text-gray-900">{log.targetLabel || log.targetId}</p>
+                                <p className="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Target</p>
+                                <p className="break-words text-gray-900 dark:text-gray-100">{log.targetLabel || log.targetId}</p>
                               </div>
                               <div>
-                                <p className="text-xs font-medium uppercase text-gray-400">Type</p>
-                                <p className="capitalize text-gray-900">{log.targetType}</p>
+                                <p className="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Type</p>
+                                <p className="capitalize text-gray-900 dark:text-gray-100">{log.targetType}</p>
                               </div>
                             </div>
 
@@ -357,32 +357,32 @@ export default function AdminAuditPage() {
                               <div className="grid gap-3 text-sm sm:grid-cols-2 lg:max-w-2xl">
                                 {metadataEntries.slice(0, 4).map(([key, value]) => (
                                   <div key={key}>
-                                    <p className="text-xs font-medium uppercase text-gray-400">{formatLabel(key)}</p>
-                                    <p className="break-words text-gray-900">{formatValue(value)}</p>
+                                    <p className="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">{formatLabel(key)}</p>
+                                    <p className="break-words text-gray-900 dark:text-gray-100">{formatValue(value)}</p>
                                   </div>
                                 ))}
                               </div>
                             )}
                           </div>
 
-                          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Event</p>
+                          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/5">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Event</p>
                             <div className="mt-1.5">
                               <ActionBadge action={log.action} />
                             </div>
 
-                            <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Actor</p>
-                            <p className="mt-1 text-sm text-gray-700">{log.actor.name}</p>
+                            <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Actor</p>
+                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-200">{log.actor.name}</p>
 
-                            <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Time</p>
-                            <p className="mt-1 text-sm text-gray-700">{new Date(log.createdAt).toLocaleString()}</p>
+                            <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Time</p>
+                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-200">{new Date(log.createdAt).toLocaleString()}</p>
                           </div>
                         </div>
 
                         {changes.length > 0 && (
                           <div>
-                            <p className="mb-2 text-xs font-medium uppercase text-gray-400">Field changes</p>
-                            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                            <p className="mb-2 text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Field changes</p>
+                            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-white/10 dark:bg-ink-light">
                               <table className="tracker w-full">
                                 <thead>
                                   <tr>
@@ -413,7 +413,7 @@ export default function AdminAuditPage() {
           ))}
 
           {logs.length === 100 && (
-            <p className="text-center text-xs text-gray-400">
+            <p className="text-center text-xs text-gray-400 dark:text-gray-500">
               Showing the most recent 100 entries — narrow the date range to see more.
             </p>
           )}

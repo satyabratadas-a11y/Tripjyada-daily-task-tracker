@@ -17,7 +17,15 @@ function formatTaskDate(date: string) {
   });
 }
 
-function AddTaskForm({ defaultDate, onAdded }: { defaultDate: string; onAdded: () => void }) {
+function sortTasksByDate(tasks: Task[]) {
+  return [...tasks].sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.createdAt.localeCompare(b.createdAt);
+  });
+}
+
+function AddTaskForm({ defaultDate, onAdded }: { defaultDate: string; onAdded: (task: Task) => void }) {
   const [date, setDate] = useState(defaultDate);
   const [assignedTask, setAssignedTask] = useState('');
   const [brief, setBrief] = useState('');
@@ -30,10 +38,15 @@ function AddTaskForm({ defaultDate, onAdded }: { defaultDate: string; onAdded: (
     setSaving(true);
     setError('');
     try {
-      await api.post('/api/tasks/self', { date, assignedTask, brief, memberStatus: 'on_progress' });
+      const { task } = await api.post<{ task: Task }>('/api/tasks/self', {
+        date,
+        assignedTask,
+        brief,
+        memberStatus: 'on_progress',
+      });
       setAssignedTask('');
       setBrief('');
-      onAdded();
+      onAdded(task);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to add task');
     } finally {
@@ -44,15 +57,15 @@ function AddTaskForm({ defaultDate, onAdded }: { defaultDate: string; onAdded: (
   return (
     <div className="card mb-6 flex flex-wrap items-end gap-3">
       <div className="w-full sm:w-auto">
-        <label className="mb-1 block text-xs font-medium text-gray-500">Date</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Date</label>
         <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500">Task</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Task</label>
         <input className="input" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
       </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500">Brief (optional)</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief (optional)</label>
         <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
       </div>
       <button className="btn-primary w-full sm:w-auto" disabled={saving || !assignedTask} onClick={handleAdd}>
@@ -252,6 +265,20 @@ export default function EmployeeLogPage() {
   const defaultAddDate = selectedDate || new Date().toISOString().slice(0, 10);
   const flaggedTasks = filteredTasks.filter((t) => t.adminStatus === 'flagged');
 
+  function handleTaskAdded(task: Task) {
+    const taskDateKey = task.date.slice(0, 10);
+    const [taskYear, taskMonth] = taskDateKey.split('-').map(Number);
+
+    if (taskYear === year && taskMonth === month) {
+      setTasks((prev) => sortTasksByDate([...prev, task]));
+      return;
+    }
+
+    setSelectedDate(taskDateKey);
+    setMonth(taskMonth);
+    setYear(taskYear);
+  }
+
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -267,7 +294,7 @@ export default function EmployeeLogPage() {
           <input type="number" className="input w-full sm:w-24" value={year} onChange={(e) => setYear(Number(e.target.value))} />
         </div>
       </div>
-      <p className="mb-4 text-sm text-gray-500">
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         Admin remarks and verified status control the progress view. Your update is only `On Progress` or `Done`.
       </p>
 
@@ -277,7 +304,7 @@ export default function EmployeeLogPage() {
         <MonthCalendar month={month} year={year} tasks={tasks} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <div className="min-w-0">
           <SummaryBar stats={stats} />
-          <AddTaskForm defaultDate={defaultAddDate} onAdded={load} />
+          <AddTaskForm defaultDate={defaultAddDate} onAdded={handleTaskAdded} />
         </div>
       </div>
 
@@ -294,13 +321,13 @@ export default function EmployeeLogPage() {
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : filteredTasks.length === 0 ? (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {selectedDate ? 'No tasks on this day.' : 'No tasks assigned this month yet.'}
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200">
+        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
           <table className="tracker w-full">
             <thead>
               <tr>
@@ -321,7 +348,9 @@ export default function EmployeeLogPage() {
                 <OwnRow
                   key={t._id}
                   task={t}
-                  onSaved={(updated) => setTasks((prev) => prev.map((x) => (x._id === updated._id ? updated : x)))}
+                  onSaved={(updated) =>
+                    setTasks((prev) => sortTasksByDate(prev.map((x) => (x._id === updated._id ? updated : x))))
+                  }
                   onDeleted={(id) => setTasks((prev) => prev.filter((x) => x._id !== id))}
                 />
               ))}

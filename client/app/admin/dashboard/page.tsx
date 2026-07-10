@@ -17,10 +17,10 @@ function ProgressBar({ pct }: { pct: number }) {
   const color = pct >= 80 ? 'bg-status-completed' : pct >= 50 ? 'bg-status-progress' : 'bg-status-flagged';
   return (
     <div className="flex items-center gap-2">
-      <div className="h-2 w-32 overflow-hidden rounded-full bg-gray-100">
+      <div className="h-2 w-32 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
         <div className={`h-full ${color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
       </div>
-      <span className="text-xs text-gray-600">{pct}%</span>
+      <span className="text-xs text-gray-600 dark:text-gray-300">{pct}%</span>
     </div>
   );
 }
@@ -70,9 +70,9 @@ export default function AdminDashboardPage() {
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
 
       {loading || !data ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200">
+        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
           <table className="tracker w-full">
             <thead>
               <tr>
@@ -108,7 +108,7 @@ export default function AdminDashboardPage() {
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-gray-50 font-medium">
+                <tr className="bg-gray-50 font-medium dark:bg-white/5">
                   <td data-label="Team member">TEAM TOTAL</td>
                   <td data-label="Role"></td>
                   <td data-label="Assigned">{data.team.assignedDays}</td>

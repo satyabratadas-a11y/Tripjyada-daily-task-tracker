@@ -1,12 +1,14 @@
+import type { Role } from './types';
+import { isSuperAdmin } from './roles';
+
 export interface NavItem {
   href: string;
   label: string;
   icon?: string;
 }
 
-export const ADMIN_NAV_ITEMS: NavItem[] = [
+const BASE_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/today', label: "Today's Tasks", icon: 'fa-solid fa-list-check' },
-  { href: '/admin/users', label: 'Users', icon: 'fa-solid fa-users' },
   { href: '/admin/dashboard', label: 'Dashboard', icon: 'fa-solid fa-gauge-high' },
   { href: '/admin/report', label: 'Reports', icon: 'fa-solid fa-file-excel' },
   { href: '/admin/audit', label: 'Audit Log', icon: 'fa-solid fa-clock-rotate-left' },
@@ -20,3 +22,17 @@ export const EMPLOYEE_NAV_ITEMS: NavItem[] = [
   { href: '/content', label: 'Content Calendar', icon: 'fa-solid fa-layer-group' },
   { href: '/employee/password', label: 'Change Password', icon: 'fa-solid fa-key' },
 ];
+
+export function getNavItemsForRole(role?: Role | null): NavItem[] {
+  if (isSuperAdmin(role)) {
+    return [
+      BASE_ADMIN_NAV_ITEMS[0],
+      { href: '/admin/users', label: 'Users', icon: 'fa-solid fa-users' },
+      ...BASE_ADMIN_NAV_ITEMS.slice(1),
+    ];
+  }
+  if (role === 'admin') {
+    return BASE_ADMIN_NAV_ITEMS;
+  }
+  return EMPLOYEE_NAV_ITEMS;
+}

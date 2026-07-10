@@ -44,10 +44,10 @@ function cellClass({
   const hasFlag = Boolean(summary && summary.flagged > 0);
   if (isSelected && hasFlag) return 'border-status-flagged bg-status-flagged text-white';
   if (isSelected) return 'border-brand bg-brand text-white';
-  if (hasFlag) return 'border-status-flagged/50 bg-status-flagged/10 text-red-900 hover:border-status-flagged';
-  if (isToday) return 'border-brand text-brand';
-  if (isSunday) return 'border-transparent bg-status-sunday/30 text-gray-700 hover:border-gray-300';
-  return 'border-transparent text-gray-700 hover:border-gray-300';
+  if (hasFlag) return 'border-status-flagged/50 bg-status-flagged/10 text-red-900 hover:border-status-flagged dark:text-red-300 dark:hover:border-status-flagged/70';
+  if (isToday) return 'border-brand text-brand dark:border-brand-light/50 dark:text-brand-light';
+  if (isSunday) return 'border-transparent bg-status-sunday/30 text-gray-700 hover:border-gray-300 dark:bg-status-sunday/10 dark:text-gray-300 dark:hover:border-white/15';
+  return 'border-transparent text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:border-white/15';
 }
 
 export default function MonthCalendar({
@@ -76,7 +76,7 @@ export default function MonthCalendar({
 
   return (
     <div className="card">
-      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[11px] font-medium uppercase text-gray-400">
+      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[11px] font-medium uppercase text-gray-400 dark:text-gray-500">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
           <div key={d}>{d}</div>
         ))}
@@ -109,7 +109,7 @@ export default function MonthCalendar({
                 }`}
               />
               {summary && summary.count > 1 && (
-                <span className={`mt-0.5 text-[9px] ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                <span className={`mt-0.5 text-[9px] ${isSelected ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`}>
                   {summary.count}
                 </span>
               )}

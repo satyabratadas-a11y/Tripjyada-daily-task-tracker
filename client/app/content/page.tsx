@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
+import { isAdminLike } from '@/lib/roles';
 import type { ContentClient } from '@/lib/content-types';
 
 interface ClientStats {
@@ -153,7 +154,9 @@ export default function ContentHubPage() {
     await load();
   }
 
-  const canManage = (c: ContentClient) => user?.role === 'admin' || c.myRole === 'owner';
+  const canManage = (c: ContentClient) =>
+    isAdminLike(user?.role) || c.myRole === 'owner' || c.myRole === 'editor' || c.myRole === 'viewer';
+  const canArchive = (c: ContentClient) => isAdminLike(user?.role) || c.myRole === 'owner';
 
   return (
     <div>
@@ -235,9 +238,11 @@ export default function ContentHubPage() {
                       <button className="btn-secondary" onClick={() => setEditingId(c.id)}>
                         <i className="fa-solid fa-pen" />
                       </button>
-                      <button className="btn-secondary" onClick={() => handleArchiveToggle(c)}>
-                        <i className={c.status === 'archived' ? 'fa-solid fa-box-open' : 'fa-solid fa-box-archive'} />
-                      </button>
+                      {canArchive(c) && (
+                        <button className="btn-secondary" onClick={() => handleArchiveToggle(c)}>
+                          <i className={c.status === 'archived' ? 'fa-solid fa-box-open' : 'fa-solid fa-box-archive'} />
+                        </button>
+                      )}
                     </>
                   )}
                 </div>

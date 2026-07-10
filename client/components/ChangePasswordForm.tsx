@@ -40,18 +40,18 @@ export default function ChangePasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="card space-y-4" noValidate>
       <div>
-        <label className="mb-1 block text-sm font-medium">Current password</label>
+        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Current password</label>
         <PasswordInput value={currentPassword} onChange={setCurrentPassword} required autoComplete="current-password" />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">New password</label>
+        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">New password</label>
         <PasswordInput value={newPassword} onChange={setNewPassword} required minLength={8} autoComplete="new-password" />
         {touched && newPassword.length > 0 && newPassword.length < 8 && (
           <p className="mt-1 text-xs text-status-flagged">Password must be at least 8 characters.</p>
         )}
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Confirm new password</label>
+        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Confirm new password</label>
         <PasswordInput value={confirmPassword} onChange={setConfirmPassword} required autoComplete="new-password" />
         {touched && !passwordsMatch && <p className="mt-1 text-xs text-status-flagged">Passwords do not match.</p>}
       </div>
