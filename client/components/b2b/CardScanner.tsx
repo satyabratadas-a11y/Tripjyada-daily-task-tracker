@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { API_URL } from '@/lib/api';
+import { MAX_IMAGE_DIMENSION, IMAGE_QUALITY, downscaleImage } from '@/lib/imageResize';
 
 type FormState = {
   name: string;
@@ -178,8 +179,11 @@ export default function CardScanner() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Downscale directly at capture time (rather than draw full-res then resize after) — no need
+    // for an intermediate full-resolution blob when this is the only place it'd be used.
+    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -190,7 +194,7 @@ export default function CardScanner() {
         handleCaptured(step === 'capture-back' ? 'back' : 'front', blob);
       },
       'image/jpeg',
-      0.92
+      IMAGE_QUALITY
     );
   }
 
@@ -199,10 +203,18 @@ export default function CardScanner() {
     fileInputRef.current?.click();
   }
 
-  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (file) handleCaptured(uploadSideRef.current, file);
+    if (!file) return;
+    // Uploaded files (unlike camera captures) can be arbitrarily large — a modern phone photo is
+    // often 4000px+ wide — so these always need downscaling before they're sent anywhere.
+    try {
+      const resized = await downscaleImage(file);
+      handleCaptured(uploadSideRef.current, resized);
+    } catch {
+      handleCaptured(uploadSideRef.current, file);
+    }
   }
 
   function addBackSide() {
@@ -329,9 +341,14 @@ export default function CardScanner() {
         {step === 'ask-back' && (
           <div className="card space-y-4">
             <img src={frontUrl} alt="Captured front of business card" className="w-full rounded-lg border border-gray-200 dark:border-white/10" />
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Add the back of the card?</p>
-              <p className="text-xs text-gray-500">Optional — useful when the address or extra details are printed on the back.</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Add the back of the card?</p>
+                <p className="text-xs text-gray-500">Optional — useful when the address or extra details are printed on the back.</p>
+              </div>
+              <button type="button" className="shrink-0 text-sm text-gray-500 underline" onClick={retake}>
+                Retake
+              </button>
             </div>
           </div>
         )}
