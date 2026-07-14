@@ -100,33 +100,18 @@ export default function MyContactsPage() {
       ) : filteredContacts.length === 0 ? (
         <p className="text-sm text-gray-500">No contacts match your filters.</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
-          <table className="tracker w-full text-xs">
-            <thead>
-              <tr className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500 dark:bg-white/5">
-                <th className="p-2">Date</th>
-                <th className="p-2">Name</th>
-                <th className="p-2">Company</th>
-                <th className="p-2">Phone</th>
-                <th className="p-2">Email</th>
-                <th className="p-2">Address</th>
-                <th className="p-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {filteredContacts.map((c) => (
-                <tr
-                  key={c._id}
-                  className="cursor-pointer border-t border-gray-100 align-top dark:border-white/10"
-                  onClick={() => setSelected(c)}
-                >
-                  <td className="whitespace-nowrap p-2 text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
-                  <td className="p-2 font-medium text-gray-900 dark:text-gray-100">{c.name || 'Unnamed'}</td>
-                  <td className="p-2 text-gray-600 dark:text-gray-300">{c.company}</td>
-                  <td className="whitespace-nowrap p-2 text-gray-600 dark:text-gray-300">{c.phone}</td>
-                  <td className="p-2 text-gray-600 dark:text-gray-300">{c.email}</td>
-                  <td className="p-2 text-gray-600 dark:text-gray-300">{c.address}</td>
-                  <td className="p-2">
+        <>
+          {/* Mobile: one card per contact */}
+          <div className="space-y-3 sm:hidden">
+            {filteredContacts.map((c) => (
+              <div key={c._id} className="card cursor-pointer" onClick={() => setSelected(c)}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-gray-900 dark:text-gray-100">{c.name || 'Unnamed'}</p>
+                    {c.company && <p className="truncate text-sm text-gray-500">{c.company}</p>}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</span>
                     <button
                       type="button"
                       className="text-red-500 hover:text-red-700"
@@ -134,15 +119,84 @@ export default function MyContactsPage() {
                         e.stopPropagation();
                         handleDelete(c._id);
                       }}
+                      aria-label="Delete contact"
                     >
                       <i className="fa-solid fa-trash" />
                     </button>
-                  </td>
+                  </div>
+                </div>
+
+                {(c.phone || c.email || c.address) && (
+                  <div className="mt-3 space-y-1.5 border-t border-gray-100 pt-3 text-sm text-gray-600 dark:border-white/10 dark:text-gray-300">
+                    {c.phone && (
+                      <div className="flex items-center gap-2">
+                        <i className="fa-solid fa-phone w-4 text-gray-400" />
+                        <span>{c.phone}</span>
+                      </div>
+                    )}
+                    {c.email && (
+                      <div className="flex items-center gap-2">
+                        <i className="fa-solid fa-envelope w-4 text-gray-400" />
+                        <span className="truncate">{c.email}</span>
+                      </div>
+                    )}
+                    {c.address && (
+                      <div className="flex items-start gap-2">
+                        <i className="fa-solid fa-location-dot w-4 pt-0.5 text-gray-400" />
+                        <span>{c.address}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-200 dark:border-white/10 sm:block">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500 dark:bg-white/5">
+                  <th className="p-2">Date</th>
+                  <th className="p-2">Name</th>
+                  <th className="p-2">Company</th>
+                  <th className="p-2">Phone</th>
+                  <th className="p-2">Email</th>
+                  <th className="p-2">Address</th>
+                  <th className="p-2" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredContacts.map((c) => (
+                  <tr
+                    key={c._id}
+                    className="cursor-pointer border-t border-gray-100 align-top dark:border-white/10"
+                    onClick={() => setSelected(c)}
+                  >
+                    <td className="whitespace-nowrap p-2 text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
+                    <td className="p-2 font-medium text-gray-900 dark:text-gray-100">{c.name || 'Unnamed'}</td>
+                    <td className="p-2 text-gray-600 dark:text-gray-300">{c.company}</td>
+                    <td className="whitespace-nowrap p-2 text-gray-600 dark:text-gray-300">{c.phone}</td>
+                    <td className="p-2 text-gray-600 dark:text-gray-300">{c.email}</td>
+                    <td className="p-2 text-gray-600 dark:text-gray-300">{c.address}</td>
+                    <td className="p-2">
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(c._id);
+                        }}
+                      >
+                        <i className="fa-solid fa-trash" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {selected && (
