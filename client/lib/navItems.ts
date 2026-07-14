@@ -13,6 +13,7 @@ const BASE_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/report', label: 'Reports', icon: 'fa-solid fa-file-excel' },
   { href: '/admin/audit', label: 'Audit Log', icon: 'fa-solid fa-clock-rotate-left' },
   { href: '/content', label: 'Content Calendar', icon: 'fa-solid fa-layer-group' },
+  { href: '/admin/b2b-contacts', label: 'B2B Contacts', icon: 'fa-solid fa-address-card' },
   { href: '/admin/password', label: 'Change Password', icon: 'fa-solid fa-key' },
 ];
 
@@ -23,16 +24,26 @@ export const EMPLOYEE_NAV_ITEMS: NavItem[] = [
   { href: '/employee/password', label: 'Change Password', icon: 'fa-solid fa-key' },
 ];
 
+export const B2B_AGENT_NAV_ITEMS: NavItem[] = [
+  { href: '/b2b/capture', label: 'Scan Card', icon: 'fa-solid fa-camera' },
+  { href: '/b2b/contacts', label: 'My Contacts', icon: 'fa-solid fa-address-card' },
+  { href: '/b2b/password', label: 'Change Password', icon: 'fa-solid fa-key' },
+];
+
 export function getNavItemsForRole(role?: Role | null): NavItem[] {
   if (isSuperAdmin(role)) {
     return [
-      BASE_ADMIN_NAV_ITEMS[0],
+      { href: '/admin/super-dashboard', label: 'Super Admin', icon: 'fa-solid fa-shield-halved' },
       { href: '/admin/users', label: 'Users', icon: 'fa-solid fa-users' },
+      BASE_ADMIN_NAV_ITEMS[0],
       ...BASE_ADMIN_NAV_ITEMS.slice(1),
     ];
   }
   if (role === 'admin') {
     return BASE_ADMIN_NAV_ITEMS;
+  }
+  if (role === 'b2b_agent') {
+    return B2B_AGENT_NAV_ITEMS;
   }
   return EMPLOYEE_NAV_ITEMS;
 }

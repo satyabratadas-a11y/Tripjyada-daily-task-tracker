@@ -107,9 +107,7 @@ export default function AppShell({
         </div>
       </aside>
       <div className="flex min-h-0 flex-1 flex-col md:ml-60">
-        {headerActions && (
-          <div className="hidden shrink-0 items-center justify-end gap-2 bg-ink px-6 py-2 md:flex">{headerActions}</div>
-        )}
+        {headerActions && <div className="hidden shrink-0 items-center justify-end gap-2 bg-ink px-6 py-2 md:flex">{headerActions}</div>}
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">{children}</main>
       </div>
     </div>

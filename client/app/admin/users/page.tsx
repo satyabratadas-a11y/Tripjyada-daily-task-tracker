@@ -7,7 +7,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { formatRoleLabel, isSuperAdmin } from '@/lib/roles';
 import type { Role, User, UserStatus } from '@/lib/types';
 
-const ROLE_OPTIONS: Role[] = ['employee', 'admin', 'super_admin'];
+const ROLE_OPTIONS: Role[] = ['employee', 'b2b_agent', 'admin', 'super_admin'];
+const ROLE_LABEL_OVERRIDES: Partial<Record<Role, string>> = { b2b_agent: 'B2B Agent' };
 const STATUS_OPTIONS: UserStatus[] = ['active', 'disabled'];
 
 function RoleSelect({
@@ -23,7 +24,7 @@ function RoleSelect({
     <select className="input" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as Role)}>
       {ROLE_OPTIONS.map((role) => (
         <option key={role} value={role}>
-          {formatRoleLabel(role)}
+          {ROLE_LABEL_OVERRIDES[role] ?? formatRoleLabel(role)}
         </option>
       ))}
     </select>

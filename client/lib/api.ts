@@ -1,4 +1,8 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// In dev, leave NEXT_PUBLIC_API_URL unset so requests stay relative to whatever origin the
+// browser is actually using (localhost or a LAN IP) — next.config.mjs proxies /api/* to the
+// local server, which keeps the auth cookie same-site no matter which host you load the app
+// from. Only set NEXT_PUBLIC_API_URL explicitly for a real cross-origin deployment (production).
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export class ApiError extends Error {
   status: number;

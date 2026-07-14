@@ -11,6 +11,7 @@ export default function PasswordInput({
   minLength,
   autoComplete,
   variant = 'default',
+  className = '',
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -19,6 +20,7 @@ export default function PasswordInput({
   minLength?: number;
   autoComplete?: string;
   variant?: 'default' | 'glass';
+  className?: string;
 }) {
   const [visible, setVisible] = useState(false);
   const isGlass = variant === 'glass';
@@ -32,7 +34,7 @@ export default function PasswordInput({
         minLength={minLength}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        className={`${isGlass ? 'glass-input' : 'input'} pl-9 pr-10`}
+        className={`${isGlass ? 'glass-input' : 'input'} ${className} pl-9 pr-10`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />

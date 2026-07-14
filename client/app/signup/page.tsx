@@ -5,9 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import PasswordInput from '@/components/PasswordInput';
-import InputIcon from '@/components/InputIcon';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const fieldClass =
+  'mb-3 rounded-md border-0 bg-gray-100 p-2 text-gray-900 transition duration-150 ease-in-out focus:bg-gray-200 focus:outline-none focus:ring-1 focus:ring-brand';
+const passwordFieldClass = 'mb-3 rounded-md border-0 bg-gray-100 focus:bg-gray-200 focus:ring-1 focus:ring-brand';
 
 export default function SignupPage() {
   const [form, setForm] = useState({ name: '', email: '', jobTitle: '', employeeCode: '', password: '' });
@@ -48,18 +51,19 @@ export default function SignupPage() {
 
   if (done) {
     return (
-      <div className="auth-backdrop">
-        <div className="glass-card w-full max-w-sm text-center">
-          <i className="fa-solid fa-circle-check mb-3 text-4xl text-brand-light" />
-          <h1 className="mb-2 text-xl font-semibold text-white">Account created</h1>
-          <p className="text-sm text-white/60">
-            An admin needs to approve your account before you can log in. Check back soon.
+      <div className="flex min-h-screen flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-lg bg-white p-6 text-center shadow-md">
+          <div className="mb-4 flex items-center justify-between">
+            <Image src="/logo.webp" alt="Tripjyada" width={56} height={56} unoptimized className="rounded-xl" />
+            <h2 className="text-2xl font-bold text-gray-900">Account created</h2>
+          </div>
+          <p className="mt-2 text-sm text-gray-500">
+            A super admin needs to approve your account before you can log in. Check back soon.
           </p>
           <Link
             href="/login"
-            className="mt-6 inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20"
+            className="mt-6 inline-block rounded-md bg-gradient-to-r from-brand-dark to-brand-light px-4 py-2 text-sm font-bold text-white transition duration-150 ease-in-out hover:from-brand hover:to-brand-light"
           >
-            <i className="fa-solid fa-arrow-left" />
             Back to login
           </Link>
         </div>
@@ -68,119 +72,85 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="auth-backdrop">
-      <div className="glass-card w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 rounded-2xl bg-white/15 p-2 shadow-lg backdrop-blur">
-            <Image src="/logo.webp" alt="Tripjyada" width={52} height={52} className="rounded-xl" />
-          </div>
-          <h1 className="text-xl font-semibold text-white">Create account</h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-white/60">
-            <i className="fa-solid fa-user-check text-xs" />
-            Requests are approved by an admin
-          </p>
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-md">
+        <div className="mb-4 flex items-center justify-between">
+          <Image src="/logo.webp" alt="Tripjyada" width={56} height={56} unoptimized className="rounded-xl" />
+          <h2 className="text-2xl font-bold text-gray-900">Create account</h2>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-white/80">Full name</label>
-            <div className="relative">
-              <InputIcon icon="fa-solid fa-user" variant="glass" />
-              <input
-                required
-                className="glass-input pl-9"
-                value={form.name}
-                onChange={(e) => update('name', e.target.value)}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-white/80">Employee ID</label>
-            <div className="relative">
-              <InputIcon icon="fa-solid fa-id-badge" variant="glass" />
-              <input
-                required
-                placeholder="e.g. EMP1023"
-                className="glass-input pl-9"
-                value={form.employeeCode}
-                onChange={(e) => update('employeeCode', e.target.value)}
-              />
-            </div>
-            {touched && form.employeeCode.trim().length === 0 && (
-              <p className="mt-1 text-xs text-red-300">Employee ID is required.</p>
-            )}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-white/80">Job title</label>
-            <div className="relative">
-              <InputIcon icon="fa-solid fa-briefcase" variant="glass" />
-              <input
-                placeholder="e.g. Video Editor"
-                className="glass-input pl-9"
-                value={form.jobTitle}
-                onChange={(e) => update('jobTitle', e.target.value)}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-white/80">Email</label>
-            <div className="relative">
-              <InputIcon icon="fa-solid fa-envelope" variant="glass" />
-              <input
-                type="email"
-                required
-                className="glass-input pl-9"
-                value={form.email}
-                onChange={(e) => update('email', e.target.value)}
-              />
-            </div>
-            {touched && !emailValid && <p className="mt-1 text-xs text-red-300">Enter a valid email address.</p>}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-white/80">Password</label>
-            <PasswordInput
-              value={form.password}
-              onChange={(v) => update('password', v)}
-              required
-              minLength={8}
-              autoComplete="new-password"
-              variant="glass"
-            />
-            {touched && form.password.length > 0 && form.password.length < 8 && (
-              <p className="mt-1 text-xs text-red-300">Password must be at least 8 characters.</p>
-            )}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-white/80">Confirm password</label>
-            <PasswordInput value={confirmPassword} onChange={setConfirmPassword} required autoComplete="new-password" variant="glass" />
-            {touched && !passwordsMatch && <p className="mt-1 text-xs text-red-300">Passwords do not match.</p>}
-          </div>
-          {error && (
-            <p className="flex items-center gap-1.5 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-              <i className="fa-solid fa-circle-exclamation" />
-              {error}
-            </p>
+        <p className="mb-4 text-sm text-gray-500">Requests are approved by a super admin</p>
+
+        <form onSubmit={handleSubmit} className="flex flex-col" noValidate>
+          <input
+            required
+            placeholder="Full name"
+            className={fieldClass}
+            value={form.name}
+            onChange={(e) => update('name', e.target.value)}
+            autoComplete="name"
+          />
+          <input
+            required
+            placeholder="Employee ID, e.g. EMP1023"
+            className={fieldClass}
+            value={form.employeeCode}
+            onChange={(e) => update('employeeCode', e.target.value)}
+          />
+          {touched && form.employeeCode.trim().length === 0 && (
+            <p className="-mt-2 mb-3 text-xs text-red-600">Employee ID is required.</p>
           )}
+          <input
+            placeholder="Job title, e.g. Video Editor"
+            className={fieldClass}
+            value={form.jobTitle}
+            onChange={(e) => update('jobTitle', e.target.value)}
+          />
+          <input
+            type="email"
+            required
+            placeholder="Email address"
+            className={fieldClass}
+            value={form.email}
+            onChange={(e) => update('email', e.target.value)}
+            autoComplete="email"
+          />
+          {touched && !emailValid && <p className="-mt-2 mb-3 text-xs text-red-600">Enter a valid email address.</p>}
+          <PasswordInput
+            value={form.password}
+            onChange={(v) => update('password', v)}
+            placeholder="Password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            className={passwordFieldClass}
+          />
+          {touched && form.password.length > 0 && form.password.length < 8 && (
+            <p className="-mt-2 mb-3 text-xs text-red-600">Password must be at least 8 characters.</p>
+          )}
+          <PasswordInput
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            placeholder="Confirm password"
+            required
+            autoComplete="new-password"
+            className={passwordFieldClass}
+          />
+          {touched && !passwordsMatch && <p className="-mt-2 mb-3 text-xs text-red-600">Passwords do not match.</p>}
+
+          {error && <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-600">{error}</p>}
+
           <button
             type="submit"
             disabled={submitting}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark hover:shadow-brand/40 disabled:opacity-50"
+            className="mt-1 rounded-md bg-gradient-to-r from-brand-dark to-brand-light px-4 py-2 font-bold text-white transition duration-150 ease-in-out hover:from-brand hover:to-brand-light disabled:opacity-50"
           >
-            {submitting ? (
-              <>
-                <i className="fa-solid fa-circle-notch fa-spin" />
-                Creating…
-              </>
-            ) : (
-              <>
-                <i className="fa-solid fa-user-plus" />
-                Sign up
-              </>
-            )}
+            {submitting ? 'Creating…' : 'Sign up'}
           </button>
         </form>
-        <p className="mt-5 text-center text-sm text-white/60">
+
+        <p className="mt-4 text-center text-sm text-gray-900">
           Already have an account?{' '}
-          <Link href="/login" className="font-medium text-brand-light hover:underline">
+          <Link href="/login" className="text-brand hover:underline">
             Sign in
           </Link>
         </p>

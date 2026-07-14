@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
+import GoogleSignInPanel from '@/components/GoogleSignInPanel';
 import PasswordInput from '@/components/PasswordInput';
-import InputIcon from '@/components/InputIcon';
 import type { User } from '@/lib/types';
 import { homeRouteForRole } from '@/lib/roles';
 
@@ -17,11 +17,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setNotice('');
     setSubmitting(true);
     try {
       const { user } = await api.post<{ user: User }>('/api/auth/login', { email, password });
@@ -35,66 +37,75 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-backdrop">
-      <div className="glass-card w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 rounded-2xl bg-white/15 p-2 shadow-lg backdrop-blur">
-            <Image src="/logo.webp" alt="Tripjyada" width={52} height={52} className="rounded-xl" />
-          </div>
-          <h1 className="text-xl font-semibold text-white">Tripjyada Task Tracker</h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-white/60">
-            <i className="fa-solid fa-shield-halved text-xs" />
-            Sign in to your account
-          </p>
+    <div className="flex min-h-screen flex-col items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-md">
+        <div className="mb-4 flex items-center justify-between">
+          <Image src="/logo.webp" alt="Tripjyada" width={56} height={56} unoptimized className="rounded-xl" />
+          <h2 className="text-2xl font-bold text-gray-900">Login</h2>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-white/80">Email</label>
-            <div className="relative">
-              <InputIcon icon="fa-solid fa-envelope" variant="glass" />
-              <input
-                type="email"
-                required
-                className="glass-input pl-9"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-white/80">Password</label>
-            <PasswordInput value={password} onChange={setPassword} required autoComplete="current-password" variant="glass" />
-          </div>
-          {error && (
-            <p className="flex items-center gap-1.5 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-              <i className="fa-solid fa-circle-exclamation" />
-              {error}
+        <form onSubmit={handleSubmit} className="flex flex-col" noValidate>
+          <input
+            type="email"
+            required
+            placeholder="Email address"
+            className="mb-4 rounded-md border-0 bg-gray-100 p-2 text-gray-900 transition duration-150 ease-in-out focus:bg-gray-200 focus:outline-none focus:ring-1 focus:ring-brand"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            placeholder="Password"
+            required
+            autoComplete="current-password"
+            className="mb-4 rounded-md border-0 bg-gray-100 focus:bg-gray-200 focus:ring-1 focus:ring-brand"
+          />
+
+          {error && <p className="mb-4 rounded-md bg-red-50 p-2 text-sm text-red-600">{error}</p>}
+          {notice && <p className="mb-4 rounded-md bg-amber-50 p-2 text-sm text-amber-700">{notice}</p>}
+
+          <div className="flex flex-wrap items-center justify-between">
+            <label htmlFor="remember-me" className="cursor-pointer text-sm text-gray-900">
+              <input type="checkbox" id="remember-me" className="mr-2 accent-brand" />
+              Remember me
+            </label>
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="mb-0.5 text-sm text-brand hover:underline"
+            >
+              Forgot password?
+            </a>
+            <p className="mt-4 text-gray-900">
+              Don&apos;t have an account?{' '}
+              <Link href="/signup" className="text-sm text-brand hover:underline">
+                Signup
+              </Link>
             </p>
-          )}
+          </div>
+
           <button
             type="submit"
             disabled={submitting}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark hover:shadow-brand/40 disabled:opacity-50"
+            className="mt-4 rounded-md bg-gradient-to-r from-brand-dark to-brand-light px-4 py-2 font-bold text-white transition duration-150 ease-in-out hover:from-brand hover:to-brand-light disabled:opacity-50"
           >
-            {submitting ? (
-              <>
-                <i className="fa-solid fa-circle-notch fa-spin" />
-                Signing in…
-              </>
-            ) : (
-              <>
-                <i className="fa-solid fa-right-to-bracket" />
-                Sign in
-              </>
-            )}
+            {submitting ? 'Signing in...' : 'Login'}
           </button>
         </form>
-        <p className="mt-5 text-center text-sm text-white/60">
-          No account?{' '}
-          <Link href="/signup" className="font-medium text-brand-light hover:underline">
-            Sign up
-          </Link>
-        </p>
+
+        <div className="mt-5">
+          <GoogleSignInPanel
+            onError={(message) => {
+              setNotice('');
+              setError(message);
+            }}
+            onPending={(message) => {
+              setError('');
+              setNotice(message);
+            }}
+          />
+        </div>
       </div>
     </div>
   );
