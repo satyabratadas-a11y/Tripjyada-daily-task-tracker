@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    // Gemini image extraction can take longer than Next's 30-second rewrite default. Keep the
+    // same-origin dev proxy alive long enough for the API to return its scan result.
+    proxyTimeout: 120_000,
+  },
   // Dev-only: proxy /api/* to the local Express server so the browser only ever talks to the
   // Next.js dev server's own origin. Without this, hitting the client via a LAN IP (needed to
   // test camera features on a phone) while the client hardcodes an absolute API URL makes every

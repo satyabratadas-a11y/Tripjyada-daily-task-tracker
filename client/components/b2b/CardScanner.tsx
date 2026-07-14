@@ -41,6 +41,8 @@ const SCAN_FIELDS: (keyof FormState)[] = ['name', 'company', 'jobTitle', 'phone'
 
 type Step = 'capture-front' | 'ask-back' | 'capture-back' | 'review';
 type Side = 'front' | 'back';
+type TorchCapabilities = MediaTrackCapabilities & { torch?: boolean };
+type TorchConstraintSet = MediaTrackConstraintSet & { torch: boolean };
 
 export default function CardScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -58,6 +60,9 @@ export default function CardScanner() {
   const uploadSideRef = useRef<Side>('front');
 
   const [cameraError, setCameraError] = useState('');
+  const [torchSupported, setTorchSupported] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchError, setTorchError] = useState('');
   const [step, setStep] = useState<Step>('capture-front');
   const [frontBlob, setFrontBlob] = useState<Blob | null>(null);
   const [frontUrl, setFrontUrl] = useState('');
@@ -94,6 +99,9 @@ export default function CardScanner() {
   async function startCamera() {
     const myGeneration = ++cameraGenerationRef.current;
     setCameraError('');
+    setTorchError('');
+    setTorchSupported(false);
+    setTorchOn(false);
     if (!window.isSecureContext) {
       setCameraError('Camera access requires HTTPS (or localhost). This page is loaded over an insecure connection.');
       return;
@@ -115,6 +123,9 @@ export default function CardScanner() {
         return;
       }
       streamRef.current = stream;
+      const videoTrack = stream.getVideoTracks()[0];
+      const capabilities = videoTrack?.getCapabilities?.() as TorchCapabilities | undefined;
+      setTorchSupported(Boolean(capabilities?.torch));
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         // Can still legitimately reject if superseded again between the checks above and here —
@@ -141,9 +152,30 @@ export default function CardScanner() {
   function stopCamera() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    setTorchSupported(false);
+    setTorchOn(false);
+    setTorchError('');
     // Stopping the tracks releases the hardware, but on some mobile browsers the camera-in-use
     // indicator doesn't clear until the <video> element's srcObject is detached too.
     if (videoRef.current) videoRef.current.srcObject = null;
+  }
+
+  async function toggleTorch() {
+    const videoTrack = streamRef.current?.getVideoTracks()[0];
+    if (!videoTrack || !torchSupported) return;
+
+    const nextTorchState = !torchOn;
+    setTorchError('');
+    try {
+      await videoTrack.applyConstraints({
+        advanced: [{ torch: nextTorchState } as TorchConstraintSet],
+      });
+      setTorchOn(nextTorchState);
+    } catch {
+      setTorchOn(false);
+      setTorchSupported(false);
+      setTorchError('The flashlight could not be enabled on this camera.');
+    }
   }
 
   function retake() {
@@ -322,8 +354,27 @@ export default function CardScanner() {
             {cameraError ? (
               <p className="text-sm text-red-600">{cameraError}</p>
             ) : (
-              <video ref={videoRef} muted playsInline className="w-full rounded-lg bg-black" />
+              <div className="relative overflow-hidden rounded-lg bg-black">
+                <video ref={videoRef} muted playsInline className="w-full" />
+                {torchSupported && (
+                  <button
+                    type="button"
+                    className={`absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border text-sm shadow-md transition ${
+                      torchOn
+                        ? 'border-brand bg-brand text-white'
+                        : 'border-white/40 bg-black/60 text-white hover:bg-black/75'
+                    }`}
+                    onClick={toggleTorch}
+                    aria-label={torchOn ? 'Turn flashlight off' : 'Turn flashlight on'}
+                    aria-pressed={torchOn}
+                    title={torchOn ? 'Turn flashlight off' : 'Turn flashlight on'}
+                  >
+                    <i className="fa-solid fa-bolt" />
+                  </button>
+                )}
+              </div>
             )}
+            {torchError && <p className="text-xs text-red-600">{torchError}</p>}
             {cameraError && (
               <button type="button" className="btn-secondary w-full" onClick={startCamera}>
                 <i className="fa-solid fa-rotate-right" />
@@ -355,7 +406,7 @@ export default function CardScanner() {
 
         {step === 'review' && (
           <div className="card space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid gap-3 ${backUrl ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <img src={frontUrl} alt="Front of business card" className="w-full rounded-lg border border-gray-200 dark:border-white/10" />
               {backUrl && (
                 <img src={backUrl} alt="Back of business card" className="w-full rounded-lg border border-gray-200 dark:border-white/10" />

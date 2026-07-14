@@ -49,7 +49,7 @@ export default function GoogleSignInPanel({
   onPending?: (message: string) => void;
 }) {
   const router = useRouter();
-  const { refresh } = useAuth();
+  const { completeLogin } = useAuth();
   const buttonId = useId().replace(/:/g, '-');
   const containerRef = useRef<HTMLDivElement | null>(null);
   const initializedRef = useRef(false);
@@ -83,7 +83,7 @@ export default function GoogleSignInPanel({
         return;
       }
 
-      await refresh();
+      completeLogin(data.user);
       router.replace(homeRouteForRole(data.user.role));
     } catch (err) {
       onError?.(err instanceof ApiError ? err.message : 'Google sign-in failed');

@@ -13,7 +13,7 @@ import { homeRouteForRole } from '@/lib/roles';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { refresh } = useAuth();
+  const { completeLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,7 +27,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const { user } = await api.post<{ user: User }>('/api/auth/login', { email, password });
-      await refresh();
+      completeLogin(user);
       router.replace(homeRouteForRole(user.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed');

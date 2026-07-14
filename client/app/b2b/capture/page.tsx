@@ -15,7 +15,7 @@ export default function CapturePage() {
       <p className="mb-4 text-sm text-gray-500">
         {mode === 'single'
           ? 'Point the camera at a card, capture it, review the auto-filled details, then save.'
-          : 'Select photos of multiple cards to scan and save them all at once.'}
+          : 'Select multiple card photos, then review and correct each result before saving.'}
       </p>
 
       <div className="mx-auto mb-4 flex max-w-xl gap-2">
