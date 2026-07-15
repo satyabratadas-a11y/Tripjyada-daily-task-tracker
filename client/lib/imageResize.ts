@@ -2,7 +2,10 @@
 // file can be several thousand pixels wide — downscaling before upload cuts both the network
 // transfer time and Gemini's own processing time, since it doesn't need that much resolution to
 // read printed text off a business card.
-export const MAX_IMAGE_DIMENSION = 1600;
+// Gemini bills and processes images by tile count, which scales with pixel dimensions — 1280px is
+// still far more resolution than printed card text needs, but cuts tile count (and latency) versus
+// the previous 1600px cap.
+export const MAX_IMAGE_DIMENSION = 1280;
 export const IMAGE_QUALITY = 0.85;
 
 /** Downscales an arbitrary image Blob/File to fit within MAX_IMAGE_DIMENSION, re-encoded as JPEG. */

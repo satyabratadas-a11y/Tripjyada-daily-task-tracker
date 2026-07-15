@@ -219,23 +219,32 @@ export default function MyContactsPage() {
                field) — thumbnails are small below so a normal card never triggers it. */}
             <div className="grid grid-cols-1 gap-5 overflow-y-auto p-5 sm:grid-cols-2">
               <div>
-                <p className="mb-2 text-xs text-gray-500">Click a photo to view full size</p>
-                <div className="flex gap-3">
-                  <img
-                    src={selected.imageUrl}
-                    alt={selected.name || 'Business card'}
-                    className="h-28 w-28 cursor-pointer rounded-lg border border-gray-200 object-cover transition hover:opacity-80 dark:border-white/10"
-                    onClick={() => setFullImage(selected.imageUrl)}
-                  />
-                  {selected.backImageUrl && (
-                    <img
-                      src={selected.backImageUrl}
-                      alt="Back of business card"
-                      className="h-28 w-28 cursor-pointer rounded-lg border border-gray-200 object-cover transition hover:opacity-80 dark:border-white/10"
-                      onClick={() => setFullImage(selected.backImageUrl)}
-                    />
-                  )}
-                </div>
+                {selected.imageUrl ? (
+                  <>
+                    <p className="mb-2 text-xs text-gray-500">Click a photo to view full size</p>
+                    <div className="flex gap-3">
+                      <img
+                        src={selected.imageUrl}
+                        alt={selected.name || 'Business card'}
+                        className="h-28 w-28 cursor-pointer rounded-lg border border-gray-200 object-cover transition hover:opacity-80 dark:border-white/10"
+                        onClick={() => setFullImage(selected.imageUrl)}
+                      />
+                      {selected.backImageUrl && (
+                        <img
+                          src={selected.backImageUrl}
+                          alt="Back of business card"
+                          className="h-28 w-28 cursor-pointer rounded-lg border border-gray-200 object-cover transition hover:opacity-80 dark:border-white/10"
+                          onClick={() => setFullImage(selected.backImageUrl)}
+                        />
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 text-gray-400 dark:border-white/10">
+                    <i className="fa-solid fa-address-card text-lg" />
+                    <span className="text-[10px]">Entered manually</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">

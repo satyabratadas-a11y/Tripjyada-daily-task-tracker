@@ -57,10 +57,11 @@ const FIELD_LABELS: Record<keyof FormState, string> = {
   notes: 'Notes',
 };
 
-// Same endpoint the single-card scanner uses (server-side Gemini) — run several requests in
-// parallel rather than reading each card one at a time.
-const SCAN_CONCURRENCY = 3;
+// Same endpoint the single-card scanner uses (server-side Gemini), scanned one at a time so
+// progress is easy to follow and only one Gemini request is ever in flight for this panel.
+const SCAN_CONCURRENCY = 1;
 const SAVE_CONCURRENCY = 3;
+const MAX_BULK_ITEMS = 5;
 
 async function scanCardRemote(blob: Blob, uploadName: string): Promise<Partial<FormState>> {
   const formData = new FormData();
@@ -85,11 +86,17 @@ export default function BulkCardUpload() {
   const [processing, setProcessing] = useState(false);
   const [savingReviewed, setSavingReviewed] = useState(false);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
+  const [selectionNotice, setSelectionNotice] = useState('');
 
   function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []);
+    const selected = Array.from(e.target.files || []);
     e.target.value = '';
-    if (files.length === 0) return;
+    if (selected.length === 0) return;
+
+    const files = selected.slice(0, MAX_BULK_ITEMS);
+    setSelectionNotice(
+      selected.length > MAX_BULK_ITEMS ? `Only the first ${MAX_BULK_ITEMS} photos were kept (max ${MAX_BULK_ITEMS} per batch).` : ''
+    );
 
     items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     const nextItems = files.map((file, index) => ({
@@ -226,6 +233,7 @@ export default function BulkCardUpload() {
     items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     setItems([]);
     setOpenItemId(null);
+    setSelectionNotice('');
   }
 
   const scanFinishedCount = items.filter((item) =>
@@ -259,12 +267,23 @@ export default function BulkCardUpload() {
   };
 
   return (
-    <div className="mx-auto max-w-xl space-y-4">
+    <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-white/10 dark:bg-white/[0.02]">
+      <div>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Bulk upload</h2>
+        <p className="text-xs text-gray-500">Scan up to {MAX_BULK_ITEMS} cards at once, read one by one, then review each before saving.</p>
+      </div>
+
       <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFilesSelected} />
+
+      {selectionNotice && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+          {selectionNotice}
+        </p>
+      )}
 
       {items.length === 0 ? (
         <div className="card space-y-3 text-center">
-          <p className="text-sm text-gray-500">Select one clear photo for each business card.</p>
+          <p className="text-sm text-gray-500">Select up to {MAX_BULK_ITEMS} clear photos, one per business card.</p>
           <button type="button" className="btn-primary w-full" onClick={() => fileInputRef.current?.click()}>
             <i className="fa-solid fa-upload" />
             Choose files
