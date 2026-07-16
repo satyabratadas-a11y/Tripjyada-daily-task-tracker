@@ -2,7 +2,20 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError, downloadUrl } from '@/lib/api';
+import { splitContactValues } from '@/lib/contactFormat';
 import type { Contact } from '@/lib/types';
+
+function MultiValue({ value }: { value?: string }) {
+  const parts = splitContactValues(value);
+  if (parts.length === 0) return null;
+  return (
+    <>
+      {parts.map((part, i) => (
+        <div key={i}>{part}</div>
+      ))}
+    </>
+  );
+}
 
 export default function MyContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -128,18 +141,18 @@ export default function MyContactsPage() {
 
                 {(c.phone || c.email || c.address) && (
                   <div className="mt-3 space-y-1.5 border-t border-gray-100 pt-3 text-sm text-gray-600 dark:border-white/10 dark:text-gray-300">
-                    {c.phone && (
-                      <div className="flex items-center gap-2">
+                    {splitContactValues(c.phone).map((phone, i) => (
+                      <div key={`phone-${i}`} className="flex items-center gap-2">
                         <i className="fa-solid fa-phone w-4 text-gray-400" />
-                        <span>{c.phone}</span>
+                        <span>{phone}</span>
                       </div>
-                    )}
-                    {c.email && (
-                      <div className="flex items-center gap-2">
+                    ))}
+                    {splitContactValues(c.email).map((email, i) => (
+                      <div key={`email-${i}`} className="flex items-center gap-2">
                         <i className="fa-solid fa-envelope w-4 text-gray-400" />
-                        <span className="truncate">{c.email}</span>
+                        <span className="truncate">{email}</span>
                       </div>
-                    )}
+                    ))}
                     {c.address && (
                       <div className="flex items-start gap-2">
                         <i className="fa-solid fa-location-dot w-4 pt-0.5 text-gray-400" />
@@ -176,8 +189,12 @@ export default function MyContactsPage() {
                     <td className="whitespace-nowrap p-2 text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
                     <td className="p-2 font-medium text-gray-900 dark:text-gray-100">{c.name || 'Unnamed'}</td>
                     <td className="p-2 text-gray-600 dark:text-gray-300">{c.company}</td>
-                    <td className="whitespace-nowrap p-2 text-gray-600 dark:text-gray-300">{c.phone}</td>
-                    <td className="p-2 text-gray-600 dark:text-gray-300">{c.email}</td>
+                    <td className="whitespace-nowrap p-2 text-gray-600 dark:text-gray-300">
+                      <MultiValue value={c.phone} />
+                    </td>
+                    <td className="p-2 text-gray-600 dark:text-gray-300">
+                      <MultiValue value={c.email} />
+                    </td>
                     <td className="p-2 text-gray-600 dark:text-gray-300">{c.address}</td>
                     <td className="p-2">
                       <button
@@ -248,18 +265,18 @@ export default function MyContactsPage() {
               </div>
 
               <div className="space-y-3">
-                {selected.phone && (
-                  <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                {splitContactValues(selected.phone).map((phone, i) => (
+                  <div key={`phone-${i}`} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                     <i className="fa-solid fa-phone w-4 pt-0.5 text-gray-400" />
-                    <span>{selected.phone}</span>
+                    <span>{phone}</span>
                   </div>
-                )}
-                {selected.email && (
-                  <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                ))}
+                {splitContactValues(selected.email).map((email, i) => (
+                  <div key={`email-${i}`} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                     <i className="fa-solid fa-envelope w-4 pt-0.5 text-gray-400" />
-                    <span>{selected.email}</span>
+                    <span>{email}</span>
                   </div>
-                )}
+                ))}
                 {selected.website && (
                   <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                     <i className="fa-solid fa-globe w-4 pt-0.5 text-gray-400" />

@@ -3,7 +3,20 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import RoleGuard from '@/components/RoleGuard';
+import { splitContactValues } from '@/lib/contactFormat';
 import type { Contact } from '@/lib/types';
+
+function MultiValue({ value }: { value?: string }) {
+  const parts = splitContactValues(value);
+  if (parts.length === 0) return null;
+  return (
+    <>
+      {parts.map((part, i) => (
+        <div key={i}>{part}</div>
+      ))}
+    </>
+  );
+}
 
 export default function B2BContactsAdminPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -109,18 +122,18 @@ export default function B2BContactsAdminPage() {
 
                 {(c.phone || c.email) && (
                   <div className="mt-3 space-y-1.5 border-t border-gray-100 pt-3 text-sm text-gray-600 dark:border-white/10 dark:text-gray-300">
-                    {c.phone && (
-                      <div className="flex items-center gap-2">
+                    {splitContactValues(c.phone).map((phone, i) => (
+                      <div key={`phone-${i}`} className="flex items-center gap-2">
                         <i className="fa-solid fa-phone w-4 text-gray-400" />
-                        <span>{c.phone}</span>
+                        <span>{phone}</span>
                       </div>
-                    )}
-                    {c.email && (
-                      <div className="flex items-center gap-2">
+                    ))}
+                    {splitContactValues(c.email).map((email, i) => (
+                      <div key={`email-${i}`} className="flex items-center gap-2">
                         <i className="fa-solid fa-envelope w-4 text-gray-400" />
-                        <span className="truncate">{c.email}</span>
+                        <span className="truncate">{email}</span>
                       </div>
-                    )}
+                    ))}
                     <div className="flex items-center gap-2">
                       <i className="fa-solid fa-user w-4 text-gray-400" />
                       <span>Captured by {agentName(c)}</span>
@@ -138,7 +151,8 @@ export default function B2BContactsAdminPage() {
                 <tr className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-white/5">
                   <th className="p-3">Name</th>
                   <th className="p-3">Company</th>
-                  <th className="p-3">Phone / Email</th>
+                  <th className="p-3">Phone</th>
+                  <th className="p-3">Email</th>
                   <th className="p-3">Captured by</th>
                   <th className="p-3">Date</th>
                   <th className="p-3" />
@@ -146,7 +160,7 @@ export default function B2BContactsAdminPage() {
               </thead>
               <tbody>
                 {contacts.map((c) => (
-                  <tr key={c._id} className="border-t border-gray-100 dark:border-white/10">
+                  <tr key={c._id} className="border-t border-gray-100 align-top dark:border-white/10">
                     <td
                       className="cursor-pointer p-3 font-medium text-gray-900 dark:text-gray-100"
                       onClick={() => setSelected(c)}
@@ -154,10 +168,11 @@ export default function B2BContactsAdminPage() {
                       {c.name || 'Unnamed'}
                     </td>
                     <td className="p-3 text-gray-600 dark:text-gray-300">{c.company}</td>
+                    <td className="whitespace-nowrap p-3 text-gray-600 dark:text-gray-300">
+                      <MultiValue value={c.phone} />
+                    </td>
                     <td className="p-3 text-gray-600 dark:text-gray-300">
-                      {c.phone}
-                      {c.phone && c.email ? ' / ' : ''}
-                      {c.email}
+                      <MultiValue value={c.email} />
                     </td>
                     <td className="p-3 text-gray-600 dark:text-gray-300">{agentName(c)}</td>
                     <td className="p-3 text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
@@ -223,18 +238,18 @@ export default function B2BContactsAdminPage() {
               </div>
 
               <div className="space-y-3">
-                {selected.phone && (
-                  <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                {splitContactValues(selected.phone).map((phone, i) => (
+                  <div key={`phone-${i}`} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                     <i className="fa-solid fa-phone w-4 pt-0.5 text-gray-400" />
-                    <span>{selected.phone}</span>
+                    <span>{phone}</span>
                   </div>
-                )}
-                {selected.email && (
-                  <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                ))}
+                {splitContactValues(selected.email).map((email, i) => (
+                  <div key={`email-${i}`} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                     <i className="fa-solid fa-envelope w-4 pt-0.5 text-gray-400" />
-                    <span>{selected.email}</span>
+                    <span>{email}</span>
                   </div>
-                )}
+                ))}
                 {selected.website && (
                   <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                     <i className="fa-solid fa-globe w-4 pt-0.5 text-gray-400" />
