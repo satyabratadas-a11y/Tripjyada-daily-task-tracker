@@ -90,6 +90,9 @@ function ApproveRow({ user, onDone }: { user: User; onDone: () => void }) {
       <td data-label="Name">{user.name}</td>
       <td data-label="Employee ID">{user.employeeCode}</td>
       <td data-label="Email">{user.email}</td>
+      <td data-label="Requested">
+        <span title={new Date(user.createdAt).toLocaleString()}>{new Date(user.createdAt).toLocaleDateString()}</span>
+      </td>
       <td data-label="Job title">
         <input className="input" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
       </td>
@@ -296,6 +299,7 @@ export default function AdminUsersPage() {
                   <th>Name</th>
                   <th>Employee ID</th>
                   <th>Email</th>
+                  <th>Requested</th>
                   <th>Job title</th>
                   <th>Role</th>
                   <th></th>
