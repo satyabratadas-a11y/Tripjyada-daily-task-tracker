@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
+import RoleGuard from '@/components/RoleGuard';
 import type { Contact } from '@/lib/types';
 
 export default function B2BContactsAdminPage() {
@@ -56,6 +57,7 @@ export default function B2BContactsAdminPage() {
   }
 
   return (
+    <RoleGuard role="super_admin">
     <div>
       <h1 className="mb-1 text-lg font-semibold dark:text-gray-100">B2B contacts</h1>
       <p className="mb-4 text-sm text-gray-500">Business cards captured by all B2B agents.</p>
@@ -284,5 +286,6 @@ export default function B2BContactsAdminPage() {
         </div>
       )}
     </div>
+    </RoleGuard>
   );
 }

@@ -15,7 +15,6 @@ const BASE_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/report', label: 'Reports', icon: 'fa-solid fa-file-excel' },
   { href: '/admin/audit', label: 'Audit Log', icon: 'fa-solid fa-clock-rotate-left' },
   { href: '/content', label: 'Content Calendar', icon: 'fa-solid fa-layer-group' },
-  { href: '/admin/b2b-contacts', label: 'B2B Contacts', icon: 'fa-solid fa-address-card' },
   { href: '/admin/password', label: 'Change Password', icon: 'fa-solid fa-key' },
 ];
 
@@ -37,8 +36,10 @@ export function getNavItemsForRole(role?: Role | null): NavItem[] {
     return [
       { href: '/admin/super-dashboard', label: 'Super Admin', icon: 'fa-solid fa-shield-halved' },
       { href: '/admin/users', label: 'Users', icon: 'fa-solid fa-users' },
-      BASE_ADMIN_NAV_ITEMS[0],
-      ...BASE_ADMIN_NAV_ITEMS.slice(1),
+      // B2B contacts are restricted to the super admin and the b2b_agent who captured them — a
+      // plain admin doesn't get this item, unlike the rest of BASE_ADMIN_NAV_ITEMS below.
+      { href: '/admin/b2b-contacts', label: 'B2B Contacts', icon: 'fa-solid fa-address-card' },
+      ...BASE_ADMIN_NAV_ITEMS,
     ];
   }
   if (role === 'admin') {
