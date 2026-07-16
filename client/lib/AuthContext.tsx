@@ -26,7 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await api.get<{ user: User }>('/api/auth/me');
       if (authGenerationRef.current === generation) setUser(data.user);
     } catch (err) {
-      if (authGenerationRef.current === generation) setUser(null);
+      // A network hiccup (status 0) doesn't mean the session is invalid — only a real 401 does.
+      // Clearing the user on a transient failure would force a re-login even though the cookie
+      // is still good, which is exactly what looked like "forgot my login" after a page hiccup.
+      const isNetworkError = err instanceof ApiError && err.status === 0;
+      if (authGenerationRef.current === generation && !isNetworkError) setUser(null);
     } finally {
       if (authGenerationRef.current === generation) setLoading(false);
     }
