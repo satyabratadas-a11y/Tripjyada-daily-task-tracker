@@ -98,6 +98,7 @@ function AssignForm({ employeeId, date, onAssigned }: { employeeId: string; date
 }
 
 function TaskReviewCard({ task, onSaved }: { task: Task; onSaved: (task: Task) => void }) {
+  const [expanded, setExpanded] = useState(false);
   const [assignedTask, setAssignedTask] = useState(task.assignedTask);
   const [brief, setBrief] = useState(task.brief);
   const [adminStatus, setAdminStatus] = useState(task.adminStatus);
@@ -131,72 +132,89 @@ function TaskReviewCard({ task, onSaved }: { task: Task; onSaved: (task: Task) =
 
   return (
     <div
-      className={`rounded-lg border p-4 ${
-        adminStatus === 'flagged'
+      className={`rounded-lg border ${
+        task.adminStatus === 'flagged'
           ? 'border-status-flagged bg-status-flagged/5'
           : 'border-gray-200 bg-white dark:border-white/10 dark:bg-ink-light'
       }`}
     >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <input
-            className="input mb-2 font-medium"
-            value={assignedTask}
-            onChange={(e) => setAssignedTask(e.target.value)}
-          />
-          <input
-            className="input"
-            value={brief}
-            onChange={(e) => setBrief(e.target.value)}
-            placeholder="Brief / details"
-          />
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 p-4 text-left"
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <i className={`fa-solid fa-chevron-${expanded ? 'down' : 'right'} shrink-0 text-xs text-gray-400`} />
+          <span className="truncate font-medium">{task.assignedTask || 'Untitled task'}</span>
         </div>
-        <SourceBadge value={task.createdBy} />
-      </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <MemberStatusBadge value={task.memberStatus} />
+          <AdminStatusBadge value={task.adminStatus} />
+          <SourceBadge value={task.createdBy} />
+        </div>
+      </button>
 
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-        <span className="font-medium uppercase text-gray-500 dark:text-gray-400">Employee update</span>
-        <MemberStatusBadge value={task.memberStatus} />
-        {task.proofLink && (
-          <a href={task.proofLink} target="_blank" rel="noreferrer" className="text-brand hover:underline">
-            Proof link
-          </a>
-        )}
-      </div>
+      {expanded && (
+        <div className="border-t border-gray-100 p-4 dark:border-white/10">
+          <div className="mb-3">
+            <input
+              className="input mb-2 font-medium"
+              value={assignedTask}
+              onChange={(e) => setAssignedTask(e.target.value)}
+            />
+            <input
+              className="input"
+              value={brief}
+              onChange={(e) => setBrief(e.target.value)}
+              placeholder="Brief / details"
+            />
+          </div>
 
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Admin status</span>
-        <select
-          className="input w-full sm:max-w-[220px]"
-          value={adminStatus}
-          onChange={(e) => setAdminStatus(e.target.value as Task['adminStatus'])}
-        >
-          {ADMIN_STATUS_OPTIONS.map((status) => (
-            <option key={status} value={status}>
-              {formatStatusLabel(status)}
-            </option>
-          ))}
-        </select>
-        <AdminStatusBadge value={adminStatus} />
-      </div>
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-medium uppercase text-gray-500 dark:text-gray-400">Employee update</span>
+            <MemberStatusBadge value={task.memberStatus} />
+            {task.proofLink && (
+              <a href={task.proofLink} target="_blank" rel="noreferrer" className="text-brand hover:underline">
+                Proof link
+              </a>
+            )}
+          </div>
 
-      <textarea
-        className="input min-h-[92px]"
-        placeholder="Reviewer notes / remarks"
-        value={reviewerNotes}
-        onChange={(e) => setReviewerNotes(e.target.value)}
-      />
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Admin status</span>
+            <select
+              className="input w-full sm:max-w-[220px]"
+              value={adminStatus}
+              onChange={(e) => setAdminStatus(e.target.value as Task['adminStatus'])}
+            >
+              {ADMIN_STATUS_OPTIONS.map((status) => (
+                <option key={status} value={status}>
+                  {formatStatusLabel(status)}
+                </option>
+              ))}
+            </select>
+            <AdminStatusBadge value={adminStatus} />
+          </div>
 
-      {error && <p className="mt-2 text-xs text-status-flagged">{error}</p>}
+          <textarea
+            className="input min-h-[92px]"
+            placeholder="Reviewer notes / remarks"
+            value={reviewerNotes}
+            onChange={(e) => setReviewerNotes(e.target.value)}
+          />
 
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          This admin status affects progress reports and graphs.
-        </p>
-        <button className="btn-primary w-full sm:w-auto" disabled={saving || !dirty} onClick={handleSave}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-      </div>
+          {error && <p className="mt-2 text-xs text-status-flagged">{error}</p>}
+
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              This admin status affects progress reports and graphs.
+            </p>
+            <button className="btn-primary w-full sm:w-auto" disabled={saving || !dirty} onClick={handleSave}>
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
