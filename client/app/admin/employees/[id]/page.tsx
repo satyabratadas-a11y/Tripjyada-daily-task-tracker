@@ -282,7 +282,9 @@ export default function EmployeeMonthlyLogPage() {
         </div>
       </div>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-        Review the employee&apos;s reported status here, add remarks, and set the verified result. Progress bars use the admin status only.
+        Review the employee&apos;s reported status here, add remarks, and set the verified result. Progress bars use the admin
+        status only. Only tasks marked <strong>Done</strong> appear here — On Progress tasks stay on the Today panel until
+        finished.
       </p>
 
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}

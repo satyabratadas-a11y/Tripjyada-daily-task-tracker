@@ -301,6 +301,8 @@ export default function OwnLogView() {
       </div>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         Your reviewer&apos;s remarks and verified status control the progress view. Your update is only `On Progress` or `Done`.
+        Only tasks you&apos;ve marked <strong>Done</strong> appear in this monthly log — On Progress tasks stay on your Today
+        view until finished.
       </p>
 
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
