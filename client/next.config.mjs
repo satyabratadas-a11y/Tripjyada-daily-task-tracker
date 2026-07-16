@@ -15,6 +15,24 @@ const nextConfig = {
     if (process.env.NODE_ENV === 'production') return [];
     return [{ source: '/api/:path*', destination: 'http://localhost:4000/api/:path*' }];
   },
+  // Hostinger's CDN edge was caching every response — including page HTML — for a full year
+  // (s-maxage=31536000). That's correct for hashed /_next/static files but not for pages: a
+  // stale-cached page keeps referencing asset filenames from an older deploy that no longer
+  // exist post-redeploy, so the CSS/JS 404 silently and the page renders unstyled on whichever
+  // device/edge-node still has the old page cached. Force pages to always revalidate, and
+  // re-assert the long-lived immutable cache only for the actual hashed static assets.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+    ];
+  },
   webpack: (config, { dev, isServer }) => {
     // The on-disk webpack cache repeatedly got corrupted here (Windows + this dev workflow's
     // frequent restarts interrupt its pack-file writes). Disabling it in dev trades a bit of
