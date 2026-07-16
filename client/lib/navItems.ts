@@ -36,6 +36,7 @@ export function getNavItemsForRole(role?: Role | null): NavItem[] {
     return [
       { href: '/admin/super-dashboard', label: 'Super Admin', icon: 'fa-solid fa-shield-halved' },
       { href: '/admin/users', label: 'Users', icon: 'fa-solid fa-users' },
+      { href: '/admin/monthly-review', label: 'Monthly Review', icon: 'fa-solid fa-calendar-check' },
       // B2B contacts are restricted to the super admin and the b2b_agent who captured them — a
       // plain admin doesn't get this item, unlike the rest of BASE_ADMIN_NAV_ITEMS below.
       { href: '/admin/b2b-contacts', label: 'B2B Contacts', icon: 'fa-solid fa-address-card' },
