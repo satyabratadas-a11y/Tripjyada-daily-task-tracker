@@ -24,10 +24,17 @@ const TYPE_ICONS: Record<string, string> = {
   rejected: 'fa-solid fa-circle-xmark',
   comment: 'fa-solid fa-comment',
   due_soon: 'fa-solid fa-clock',
+  signup_pending: 'fa-solid fa-user-plus',
+};
+
+// A new-signup alert only a super admin can act on gets its own color so it stands out from the
+// rest of the feed at a glance, instead of blending in with the usual brand-colored icons.
+const TYPE_ICON_COLORS: Record<string, string> = {
+  signup_pending: 'text-status-completed',
 };
 
 function isEphemeralNotification(id: string) {
-  return id.startsWith('due-') || id.startsWith('task-');
+  return id.startsWith('due-') || id.startsWith('task-') || id.startsWith('signup-');
 }
 
 export default function NotificationBell() {
@@ -129,10 +136,18 @@ export default function NotificationBell() {
                   type="button"
                   onClick={() => handleClick(n)}
                   className={`flex w-full items-start gap-2.5 border-b border-gray-50 px-3 py-2.5 text-left text-sm transition last:border-b-0 hover:bg-gray-50 dark:border-white/5 dark:hover:bg-white/5 ${
-                    !n.read ? 'bg-brand/5 dark:bg-brand/10' : ''
+                    n.type === 'signup_pending'
+                      ? 'bg-status-completed/10 dark:bg-status-completed/15'
+                      : !n.read
+                        ? 'bg-brand/5 dark:bg-brand/10'
+                        : ''
                   }`}
                 >
-                  <i className={`${TYPE_ICONS[n.type] || 'fa-solid fa-circle-info'} mt-0.5 text-brand`} />
+                  <i
+                    className={`${TYPE_ICONS[n.type] || 'fa-solid fa-circle-info'} mt-0.5 ${
+                      TYPE_ICON_COLORS[n.type] || 'text-brand'
+                    }`}
+                  />
                   <span className="min-w-0 flex-1">
                     <span className="block text-gray-800 dark:text-gray-200">{n.message}</span>
                     <span className="mt-0.5 block text-xs text-gray-400">{timeAgo(n.createdAt)}</span>

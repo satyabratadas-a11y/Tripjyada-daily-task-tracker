@@ -116,7 +116,8 @@ export type NotificationType =
   | 'approved'
   | 'rejected'
   | 'comment'
-  | 'due_soon';
+  | 'due_soon'
+  | 'signup_pending';
 
 export interface ContentNotification {
   id: string;

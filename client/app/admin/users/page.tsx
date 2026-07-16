@@ -55,6 +55,7 @@ function ApproveRow({ user, onDone }: { user: User; onDone: () => void }) {
   const [role, setRole] = useState<Role>('employee');
   const [jobTitle, setJobTitle] = useState(user.jobTitle);
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [error, setError] = useState('');
 
   async function approve() {
@@ -70,6 +71,20 @@ function ApproveRow({ user, onDone }: { user: User; onDone: () => void }) {
     }
   }
 
+  async function reject() {
+    if (!window.confirm(`Remove the signup request from ${user.name}? This cannot be undone.`)) return;
+    setRemoving(true);
+    setError('');
+    try {
+      await api.delete(`/api/admin/users/${user.id}`);
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to remove');
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   return (
     <tr>
       <td data-label="Name">{user.name}</td>
@@ -82,9 +97,14 @@ function ApproveRow({ user, onDone }: { user: User; onDone: () => void }) {
         <RoleSelect value={role} onChange={setRole} />
       </td>
       <td data-label="Actions">
-        <button className="btn-primary w-full sm:w-auto" disabled={saving} onClick={approve}>
-          {saving ? 'Approving…' : 'Approve'}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button className="btn-primary" disabled={saving || removing} onClick={approve}>
+            {saving ? 'Approving…' : 'Approve'}
+          </button>
+          <button className="btn-secondary" disabled={saving || removing} onClick={reject}>
+            {removing ? 'Removing…' : 'Reject'}
+          </button>
+        </div>
         {error && <p className="mt-1 text-xs text-status-flagged">{error}</p>}
       </td>
     </tr>
@@ -105,6 +125,7 @@ function ActiveRow({
   const [role, setRole] = useState<Role>(user.role);
   const [status, setStatus] = useState<UserStatus>(user.status);
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [error, setError] = useState('');
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -127,6 +148,20 @@ function ActiveRow({
       setError(err instanceof ApiError ? err.message : 'Failed to update account');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function remove() {
+    if (!window.confirm(`Remove ${user.name}'s account permanently? This cannot be undone.`)) return;
+    setRemoving(true);
+    setError('');
+    try {
+      await api.delete(`/api/admin/users/${user.id}`);
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to remove account');
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -162,9 +197,14 @@ function ActiveRow({
               Review tasks
             </Link>
           )}
-          <button className="btn-primary" disabled={saving || !isDirty} onClick={save}>
+          <button className="btn-primary" disabled={saving || removing || !isDirty} onClick={save}>
             {saving ? 'Saving…' : 'Save'}
           </button>
+          {!isSelf && (
+            <button className="btn-secondary" disabled={saving || removing} onClick={remove}>
+              {removing ? 'Removing…' : 'Remove'}
+            </button>
+          )}
         </div>
         {isSelf && <p className="mt-1 text-xs text-gray-400">Your own role and status stay locked for safety.</p>}
         {error && <p className="mt-1 text-xs text-status-flagged">{error}</p>}
@@ -230,6 +270,17 @@ export default function AdminUsersPage() {
       </div>
 
       {error && <p className="text-sm text-status-flagged">{error}</p>}
+
+      {!loading && pending.length > 0 && (
+        <div className="flex items-start gap-3 rounded-lg border border-status-completed/30 bg-status-completed/10 px-4 py-3 dark:border-status-completed/40 dark:bg-status-completed/15">
+          <i className="fa-solid fa-user-plus mt-0.5 text-status-completed" />
+          <p className="text-sm text-gray-800 dark:text-gray-100">
+            {pending.length === 1
+              ? `${pending[0].name} just signed up and is awaiting your approval.`
+              : `${pending.length} new accounts have signed up and are awaiting your approval.`}
+          </p>
+        </div>
+      )}
 
       <div>
         <h2 className="mb-4 text-lg font-semibold">Pending approvals</h2>
