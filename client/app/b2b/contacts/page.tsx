@@ -2,8 +2,17 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError, downloadUrl } from '@/lib/api';
+import { useAuth } from '@/lib/AuthContext';
 import { splitContactValues } from '@/lib/contactFormat';
 import type { Contact } from '@/lib/types';
+
+function agentName(c: Contact) {
+  return typeof c.capturedBy === 'object' ? c.capturedBy.name : '';
+}
+
+function agentId(c: Contact) {
+  return typeof c.capturedBy === 'object' ? c.capturedBy._id : c.capturedBy;
+}
 
 function MultiValue({ value }: { value?: string }) {
   const parts = splitContactValues(value);
@@ -18,6 +27,7 @@ function MultiValue({ value }: { value?: string }) {
 }
 
 export default function MyContactsPage() {
+  const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,12 +36,18 @@ export default function MyContactsPage() {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
 
+  function isOwn(c: Contact) {
+    return agentId(c) === user?.id;
+  }
+
   const filteredContacts = useMemo(() => {
     const q = search.trim().toLowerCase();
     return contacts.filter((c) => {
       if (dateFilter && new Date(c.createdAt).toISOString().slice(0, 10) !== dateFilter) return false;
       if (!q) return true;
-      return [c.name, c.company, c.phone, c.email, c.address].some((field) => field?.toLowerCase().includes(q));
+      return [c.name, c.company, c.phone, c.email, c.address, agentName(c)].some((field) =>
+        field?.toLowerCase().includes(q)
+      );
     });
   }, [contacts, search, dateFilter]);
 
@@ -39,7 +55,7 @@ export default function MyContactsPage() {
     setLoading(true);
     setError('');
     try {
-      const { contacts } = await api.get<{ contacts: Contact[] }>('/api/contacts/mine');
+      const { contacts } = await api.get<{ contacts: Contact[] }>('/api/contacts');
       setContacts(contacts);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load contacts');
@@ -71,8 +87,11 @@ export default function MyContactsPage() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold dark:text-gray-100">My contacts</h1>
-        <a href={downloadUrl('/api/contacts/mine/export')} className="btn-secondary text-xs">
+        <div>
+          <h1 className="text-lg font-semibold dark:text-gray-100">B2B contacts</h1>
+          <p className="text-sm text-gray-500">Business cards captured by every B2B agent — shared, not just your own.</p>
+        </div>
+        <a href={downloadUrl('/api/contacts/export')} className="btn-secondary text-xs">
           <i className="fa-solid fa-file-excel" /> Download Excel
         </a>
       </div>
@@ -80,7 +99,7 @@ export default function MyContactsPage() {
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="input max-w-xs text-sm"
-          placeholder="Search name, phone, company, address…"
+          placeholder="Search name, phone, company, address, agent…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -125,17 +144,19 @@ export default function MyContactsPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</span>
-                    <button
-                      type="button"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(c._id);
-                      }}
-                      aria-label="Delete contact"
-                    >
-                      <i className="fa-solid fa-trash" />
-                    </button>
+                    {isOwn(c) && (
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(c._id);
+                        }}
+                        aria-label="Delete contact"
+                      >
+                        <i className="fa-solid fa-trash" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -159,6 +180,10 @@ export default function MyContactsPage() {
                         <span>{c.address}</span>
                       </div>
                     )}
+                    <div className="flex items-center gap-2">
+                      <i className="fa-solid fa-user w-4 text-gray-400" />
+                      <span>{isOwn(c) ? 'Captured by you' : `Captured by ${agentName(c)}`}</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -176,6 +201,7 @@ export default function MyContactsPage() {
                   <th className="p-2">Phone</th>
                   <th className="p-2">Email</th>
                   <th className="p-2">Address</th>
+                  <th className="p-2">Captured by</th>
                   <th className="p-2" />
                 </tr>
               </thead>
@@ -196,17 +222,20 @@ export default function MyContactsPage() {
                       <MultiValue value={c.email} />
                     </td>
                     <td className="p-2 text-gray-600 dark:text-gray-300">{c.address}</td>
+                    <td className="p-2 text-gray-600 dark:text-gray-300">{isOwn(c) ? 'You' : agentName(c)}</td>
                     <td className="p-2">
-                      <button
-                        type="button"
-                        className="text-red-500 hover:text-red-700"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(c._id);
-                        }}
-                      >
-                        <i className="fa-solid fa-trash" />
-                      </button>
+                      {isOwn(c) && (
+                        <button
+                          type="button"
+                          className="text-red-500 hover:text-red-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(c._id);
+                          }}
+                        >
+                          <i className="fa-solid fa-trash" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -295,6 +324,10 @@ export default function MyContactsPage() {
                     <span>{selected.notes}</span>
                   </div>
                 )}
+                <div className="flex items-start gap-3 text-xs text-gray-400">
+                  <i className="fa-solid fa-user w-4 pt-0.5" />
+                  <span>Captured by {isOwn(selected) ? 'you' : agentName(selected)}</span>
+                </div>
                 <div className="flex items-start gap-3 text-xs text-gray-400">
                   <i className="fa-solid fa-clock w-4 pt-0.5" />
                   <span>{new Date(selected.createdAt).toLocaleString()}</span>

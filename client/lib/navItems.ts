@@ -27,7 +27,7 @@ export const EMPLOYEE_NAV_ITEMS: NavItem[] = [
 
 export const B2B_AGENT_NAV_ITEMS: NavItem[] = [
   { href: '/b2b/capture', label: 'Scan Card', icon: 'fa-solid fa-camera' },
-  { href: '/b2b/contacts', label: 'My Contacts', icon: 'fa-solid fa-address-card' },
+  { href: '/b2b/contacts', label: 'B2B Contacts', icon: 'fa-solid fa-address-card' },
   { href: '/b2b/password', label: 'Change Password', icon: 'fa-solid fa-key' },
 ];
 

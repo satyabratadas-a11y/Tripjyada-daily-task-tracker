@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, downloadUrl } from '@/lib/api';
 import RoleGuard from '@/components/RoleGuard';
 import { splitContactValues } from '@/lib/contactFormat';
 import type { Contact } from '@/lib/types';
@@ -72,8 +72,15 @@ export default function B2BContactsAdminPage() {
   return (
     <RoleGuard role="super_admin">
     <div>
-      <h1 className="mb-1 text-lg font-semibold dark:text-gray-100">B2B contacts</h1>
-      <p className="mb-4 text-sm text-gray-500">Business cards captured by all B2B agents.</p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="mb-1 text-lg font-semibold dark:text-gray-100">B2B contacts</h1>
+          <p className="text-sm text-gray-500">Business cards captured by all B2B agents.</p>
+        </div>
+        <a href={downloadUrl('/api/contacts/export')} className="btn-secondary text-xs">
+          <i className="fa-solid fa-file-excel" /> Download Excel
+        </a>
+      </div>
 
       <form onSubmit={handleSearchSubmit} className="mb-4 flex gap-2">
         <input
