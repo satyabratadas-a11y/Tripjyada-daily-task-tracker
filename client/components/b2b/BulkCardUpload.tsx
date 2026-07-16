@@ -12,6 +12,8 @@ type FormState = {
   email: string;
   website: string;
   address: string;
+  state: string;
+  pincode: string;
   notes: string;
 };
 
@@ -52,19 +54,31 @@ const EMPTY_FORM: FormState = {
   email: '',
   website: '',
   address: '',
+  state: '',
+  pincode: '',
   notes: '',
 };
 
 const FIELD_LABELS: Record<keyof FormState, string> = {
   name: 'Name',
-  company: 'Company',
+  company: 'Business name *',
   jobTitle: 'Job title',
-  phone: 'Phone',
-  email: 'Email',
+  phone: 'Phone *',
+  email: 'Email *',
   website: 'Website',
-  address: 'Address',
+  address: 'Address *',
+  state: 'State *',
+  pincode: 'Pincode *',
   notes: 'Notes',
 };
+
+// Mirrors the server-side check in contact.controller.js — this just tells the agent what's
+// missing before they hit save instead of after a rejected request.
+const MANDATORY_FIELDS: (keyof FormState)[] = ['company', 'phone', 'email', 'address', 'state', 'pincode'];
+
+function missingFields(fields: FormState) {
+  return MANDATORY_FIELDS.filter((key) => !fields[key].trim());
+}
 
 // Same endpoint the single-card scanner uses (server-side Gemini), scanned one at a time so
 // progress is easy to follow and only one Gemini request is ever in flight for this panel.
@@ -220,7 +234,8 @@ export default function BulkCardUpload() {
   async function saveAllReviewed() {
     if (savingReviewed) return;
     const queue = items.filter(
-      (item) => item.confirmed && (item.status === 'ready' || item.status === 'save-error')
+      (item) =>
+        item.confirmed && (item.status === 'ready' || item.status === 'save-error') && missingFields(item.fields).length === 0
     );
     if (queue.length === 0) return;
 
@@ -251,7 +266,8 @@ export default function BulkCardUpload() {
   ).length;
   const scanFailedCount = items.filter((item) => item.status === 'scan-error').length;
   const reviewedCount = items.filter(
-    (item) => item.confirmed && (item.status === 'ready' || item.status === 'save-error')
+    (item) =>
+      item.confirmed && (item.status === 'ready' || item.status === 'save-error') && missingFields(item.fields).length === 0
   ).length;
   const savedCount = items.filter((item) => item.status === 'done').length;
   const busy = processing || savingReviewed || items.some((item) => item.status === 'saving');
@@ -386,11 +402,17 @@ export default function BulkCardUpload() {
                             </label>
                           )}
 
+                          {item.status !== 'done' && missingFields(item.fields).length > 0 && (
+                            <p className="text-xs text-status-flagged">
+                              Still needed: {missingFields(item.fields).map((key) => FIELD_LABELS[key].replace(' *', '')).join(', ')}
+                            </p>
+                          )}
+
                           {(item.status === 'ready' || item.status === 'save-error') && (
                             <button
                               type="button"
                               className="btn-primary w-full"
-                              disabled={!item.confirmed || busy}
+                              disabled={!item.confirmed || busy || missingFields(item.fields).length > 0}
                               onClick={() => saveItem(item)}
                             >
                               <i className="fa-solid fa-floppy-disk" />

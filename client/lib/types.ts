@@ -74,6 +74,8 @@ export interface Contact {
   email: string;
   website: string;
   address: string;
+  state: string;
+  pincode: string;
   notes: string;
   rawOcrText: string;
   imageUrl: string;

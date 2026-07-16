@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError, downloadUrl } from '@/lib/api';
 import RoleGuard from '@/components/RoleGuard';
-import { splitContactValues } from '@/lib/contactFormat';
+import { splitContactValues, formatFullAddress } from '@/lib/contactFormat';
 import type { Contact } from '@/lib/types';
 
 function MultiValue({ value }: { value?: string }) {
@@ -160,6 +160,7 @@ export default function B2BContactsAdminPage() {
                   <th className="p-3">Company</th>
                   <th className="p-3">Phone</th>
                   <th className="p-3">Email</th>
+                  <th className="p-3">Address</th>
                   <th className="p-3">Captured by</th>
                   <th className="p-3">Date</th>
                   <th className="p-3" />
@@ -181,6 +182,7 @@ export default function B2BContactsAdminPage() {
                     <td className="p-3 text-gray-600 dark:text-gray-300">
                       <MultiValue value={c.email} />
                     </td>
+                    <td className="p-3 text-gray-600 dark:text-gray-300">{formatFullAddress(c.address, c.state, c.pincode)}</td>
                     <td className="p-3 text-gray-600 dark:text-gray-300">{agentName(c)}</td>
                     <td className="p-3 text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
                     <td className="p-3">
@@ -267,6 +269,12 @@ export default function B2BContactsAdminPage() {
                   <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                     <i className="fa-solid fa-location-dot w-4 pt-0.5 text-gray-400" />
                     <span>{selected.address}</span>
+                  </div>
+                )}
+                {(selected.state || selected.pincode) && (
+                  <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                    <i className="fa-solid fa-map w-4 pt-0.5 text-gray-400" />
+                    <span>{[selected.state, selected.pincode].filter(Boolean).join(' - ')}</span>
                   </div>
                 )}
                 {selected.notes && (

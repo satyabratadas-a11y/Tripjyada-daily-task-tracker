@@ -12,6 +12,8 @@ type FormState = {
   email: string;
   website: string;
   address: string;
+  state: string;
+  pincode: string;
   notes: string;
 };
 
@@ -23,21 +25,44 @@ const EMPTY_FORM: FormState = {
   email: '',
   website: '',
   address: '',
+  state: '',
+  pincode: '',
   notes: '',
 };
 
 const FIELD_LABELS: Record<keyof FormState, string> = {
   name: 'Name',
-  company: 'Company',
+  company: 'Business name *',
   jobTitle: 'Job title',
-  phone: 'Phone',
-  email: 'Email',
+  phone: 'Phone *',
+  email: 'Email *',
   website: 'Website',
-  address: 'Address',
+  address: 'Address *',
+  state: 'State *',
+  pincode: 'Pincode *',
   notes: 'Notes',
 };
 
-const SCAN_FIELDS: (keyof FormState)[] = ['name', 'company', 'jobTitle', 'phone', 'email', 'website', 'address'];
+// Required for every contact regardless of entry path — matches the server-side check in
+// contact.controller.js, which is the actual enforcement; this is just so the form tells the
+// agent what's missing before they hit save instead of after a rejected request.
+const MANDATORY_FIELDS: (keyof FormState)[] = ['company', 'phone', 'email', 'address', 'state', 'pincode'];
+
+function missingFields(form: FormState) {
+  return MANDATORY_FIELDS.filter((key) => !form[key].trim());
+}
+
+const SCAN_FIELDS: (keyof FormState)[] = [
+  'name',
+  'company',
+  'jobTitle',
+  'phone',
+  'email',
+  'website',
+  'address',
+  'state',
+  'pincode',
+];
 
 interface DuplicateInfo {
   id: string;
@@ -342,6 +367,7 @@ export default function CardScanner() {
   const inCaptureStep = step === 'capture-front' || step === 'capture-back';
   const showReviewActions = step === 'review' && !scanning;
   const fixedBarVisible = inCaptureStep || step === 'ask-back' || showReviewActions;
+  const missing = missingFields(form);
 
   return (
     <div className="mx-auto max-w-xl">
@@ -469,6 +495,12 @@ export default function CardScanner() {
                   I&apos;ve reviewed these details and they&apos;re correct
                 </label>
 
+                {missing.length > 0 && (
+                  <p className="text-xs text-status-flagged">
+                    Still needed: {missing.map((key) => FIELD_LABELS[key].replace(' *', '')).join(', ')}
+                  </p>
+                )}
+
                 {error && (
                   <button type="button" className="btn-secondary w-full" onClick={() => frontBlob && scanCard(frontBlob, backBlob)}>
                     <i className="fa-solid fa-rotate-right" />
@@ -527,7 +559,12 @@ export default function CardScanner() {
               <button type="button" className="btn-secondary flex-1" onClick={retake} disabled={saving}>
                 Retake
               </button>
-              <button type="button" className="btn-primary flex-1" onClick={handleSave} disabled={!confirmed || saving}>
+              <button
+                type="button"
+                className="btn-primary flex-1"
+                onClick={handleSave}
+                disabled={!confirmed || saving || missing.length > 0}
+              >
                 {saving ? (
                   <>
                     <i className="fa-solid fa-circle-notch fa-spin" />

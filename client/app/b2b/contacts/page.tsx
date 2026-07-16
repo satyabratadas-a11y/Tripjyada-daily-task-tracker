@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError, downloadUrl } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
-import { splitContactValues } from '@/lib/contactFormat';
+import { splitContactValues, formatFullAddress } from '@/lib/contactFormat';
 import type { Contact } from '@/lib/types';
 
 function agentName(c: Contact) {
@@ -45,7 +45,7 @@ export default function MyContactsPage() {
     return contacts.filter((c) => {
       if (dateFilter && new Date(c.createdAt).toISOString().slice(0, 10) !== dateFilter) return false;
       if (!q) return true;
-      return [c.name, c.company, c.phone, c.email, c.address, agentName(c)].some((field) =>
+      return [c.name, c.company, c.phone, c.email, c.address, c.state, c.pincode, agentName(c)].some((field) =>
         field?.toLowerCase().includes(q)
       );
     });
@@ -177,7 +177,7 @@ export default function MyContactsPage() {
                     {c.address && (
                       <div className="flex items-start gap-2">
                         <i className="fa-solid fa-location-dot w-4 pt-0.5 text-gray-400" />
-                        <span>{c.address}</span>
+                        <span>{formatFullAddress(c.address, c.state, c.pincode)}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export default function MyContactsPage() {
                     <td className="p-2 text-gray-600 dark:text-gray-300">
                       <MultiValue value={c.email} />
                     </td>
-                    <td className="p-2 text-gray-600 dark:text-gray-300">{c.address}</td>
+                    <td className="p-2 text-gray-600 dark:text-gray-300">{formatFullAddress(c.address, c.state, c.pincode)}</td>
                     <td className="p-2 text-gray-600 dark:text-gray-300">{isOwn(c) ? 'You' : agentName(c)}</td>
                     <td className="p-2">
                       {isOwn(c) && (
@@ -316,6 +316,12 @@ export default function MyContactsPage() {
                   <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
                     <i className="fa-solid fa-location-dot w-4 pt-0.5 text-gray-400" />
                     <span>{selected.address}</span>
+                  </div>
+                )}
+                {(selected.state || selected.pincode) && (
+                  <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                    <i className="fa-solid fa-map w-4 pt-0.5 text-gray-400" />
+                    <span>{[selected.state, selected.pincode].filter(Boolean).join(' - ')}</span>
                   </div>
                 )}
                 {selected.notes && (

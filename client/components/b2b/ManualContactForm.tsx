@@ -11,6 +11,8 @@ type FormState = {
   email: string;
   website: string;
   address: string;
+  state: string;
+  pincode: string;
   notes: string;
 };
 
@@ -22,19 +24,27 @@ const EMPTY_FORM: FormState = {
   email: '',
   website: '',
   address: '',
+  state: '',
+  pincode: '',
   notes: '',
 };
 
 const FIELD_LABELS: Record<keyof FormState, string> = {
   name: 'Name',
-  company: 'Company',
+  company: 'Business name *',
   jobTitle: 'Job title',
-  phone: 'Phone',
-  email: 'Email',
+  phone: 'Phone *',
+  email: 'Email *',
   website: 'Website',
-  address: 'Address',
+  address: 'Address *',
+  state: 'State *',
+  pincode: 'Pincode *',
   notes: 'Notes',
 };
+
+// Mirrors the server-side check in contact.controller.js — this just tells the agent what's
+// missing before they hit save instead of after a rejected request.
+const MANDATORY_FIELDS: (keyof FormState)[] = ['company', 'phone', 'email', 'address', 'state', 'pincode'];
 
 export default function ManualContactForm() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -47,11 +57,11 @@ export default function ManualContactForm() {
     setSavedMessage('');
   }
 
-  const hasIdentifyingField = Boolean(form.name || form.company || form.phone || form.email);
+  const missing = MANDATORY_FIELDS.filter((key) => !form[key].trim());
 
   async function handleSave() {
-    if (!hasIdentifyingField) {
-      setError('Enter at least a name, company, phone, or email');
+    if (missing.length > 0) {
+      setError(`Enter the ${missing.map((key) => FIELD_LABELS[key].replace(' *', '')).join(', ')} before saving.`);
       return;
     }
     setSaving(true);
@@ -105,7 +115,7 @@ export default function ManualContactForm() {
         ))}
       </div>
 
-      <button type="button" className="btn-primary w-full" disabled={saving} onClick={handleSave}>
+      <button type="button" className="btn-primary w-full" disabled={saving || missing.length > 0} onClick={handleSave}>
         {saving ? (
           <>
             <i className="fa-solid fa-circle-notch fa-spin" />
