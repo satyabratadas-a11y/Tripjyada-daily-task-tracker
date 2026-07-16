@@ -70,13 +70,9 @@ export default function LoginPage() {
               <input type="checkbox" id="remember-me" className="mr-2 accent-brand" />
               Remember me
             </label>
-            <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
-              className="mb-0.5 text-sm text-brand hover:underline"
-            >
+            <Link href="/forgot-password" className="mb-0.5 text-sm text-brand hover:underline">
               Forgot password?
-            </a>
+            </Link>
             <p className="mt-4 text-gray-900">
               Don&apos;t have an account?{' '}
               <Link href="/signup" className="text-sm text-brand hover:underline">
