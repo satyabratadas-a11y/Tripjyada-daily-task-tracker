@@ -88,11 +88,11 @@ export default function NotificationBell() {
   async function handleMarkAllRead() {
     try {
       await api.patch('/api/notifications/read-all');
-      const remainingActionItems = notifications.filter((n) => isEphemeralNotification(n.id) && !n.read).length;
-      setNotifications((prev) =>
-        prev.map((n) => (isEphemeralNotification(n.id) ? n : { ...n, read: true }))
-      );
-      setUnreadCount(remainingActionItems);
+      // The server now tracks a per-user "cleared at" timestamp that ephemeral alerts (task
+      // reminders, due-soon, pending signups) are checked against too, so every currently-listed
+      // notification is genuinely read after this — no need to special-case ephemeral ids here.
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
     } catch {
       // ignore
     }
