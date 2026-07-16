@@ -7,27 +7,31 @@ interface DaySummary {
   completed: number;
   flagged: number;
   onProgress: number;
+  unreviewed: number;
 }
 
 function summarize(tasks: Task[]): Map<string, DaySummary> {
   const map = new Map<string, DaySummary>();
   for (const t of tasks) {
     const key = t.date.slice(0, 10);
-    const entry = map.get(key) || { count: 0, completed: 0, flagged: 0, onProgress: 0 };
+    const entry = map.get(key) || { count: 0, completed: 0, flagged: 0, onProgress: 0, unreviewed: 0 };
     entry.count += 1;
     if (t.adminStatus === 'flagged') entry.flagged += 1;
     else if (t.adminStatus === 'completed') entry.completed += 1;
     else if (t.adminStatus === 'on_progress' || t.adminStatus === 'pending') entry.onProgress += 1;
+    if (t.adminStatus === 'pending') entry.unreviewed += 1;
     map.set(key, entry);
   }
   return map;
 }
 
-function dotColor(summary: DaySummary | undefined) {
-  if (!summary || summary.count === 0) return 'bg-gray-200';
-  if (summary.flagged > 0) return 'bg-status-flagged';
-  if (summary.completed === summary.count) return 'bg-status-completed';
-  return 'bg-status-progress';
+// Dots are deliberately sparse: today gets a green marker so it's easy to spot at a glance, a day
+// with a done-but-not-yet-verified task gets red since that's the one actionable state left once
+// the log only holds Done tasks, and every other day stays plain — no dot at all.
+function dotColor(summary: DaySummary | undefined, isToday: boolean) {
+  if (summary && summary.unreviewed > 0) return 'bg-status-flagged';
+  if (isToday) return 'bg-status-completed';
+  return null;
 }
 
 function cellClass({
@@ -103,11 +107,10 @@ export default function MonthCalendar({
               })}`}
             >
               <span>{day}</span>
-              <span
-                className={`mt-1 h-1.5 w-1.5 rounded-full ${
-                  isSelected ? 'bg-white' : dotColor(summary)
-                }`}
-              />
+              {(() => {
+                const color = isSelected ? 'bg-white' : dotColor(summary, isToday);
+                return color ? <span className={`mt-1 h-1.5 w-1.5 rounded-full ${color}`} /> : <span className="mt-1 h-1.5 w-1.5" />;
+              })()}
               {summary && summary.count > 1 && (
                 <span className={`mt-0.5 text-[9px] ${isSelected ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`}>
                   {summary.count}
