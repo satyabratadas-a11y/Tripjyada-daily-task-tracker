@@ -302,7 +302,7 @@ export default function SuperAdminDashboardPage() {
                   </Link>
                 </div>
 
-                <div className="mt-5 space-y-4">
+                <div className="mt-5 max-h-[32rem] space-y-4 overflow-y-auto pr-1">
                   {data.employeeWatch.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-6 text-sm text-gray-500 dark:border-white/10 dark:text-gray-400">
                       No employee watch items for this month. Admin review looks clean right now.
@@ -319,7 +319,7 @@ export default function SuperAdminDashboardPage() {
                   <h2 className="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">Latest admin and super admin actions</h2>
                 </div>
 
-                <div className="mt-5 space-y-3">
+                <div className="mt-5 max-h-[32rem] space-y-3 overflow-y-auto pr-1">
                   {data.recentActions.map((log) => (
                     <div key={log.id} className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-white/10 dark:bg-white/5">
                       <div className="flex flex-wrap items-center gap-2">

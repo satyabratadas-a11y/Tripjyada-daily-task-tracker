@@ -154,9 +154,22 @@ export default function ContentHubPage() {
     await load();
   }
 
+  async function handleDelete(client: ContentClient) {
+    if (
+      !window.confirm(
+        `Permanently delete "${client.name}"? This removes its entire calendar — all entries, pillars, and campaigns — and cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    await api.delete(`/api/content/clients/${client.id}`);
+    await load();
+  }
+
   const canManage = (c: ContentClient) =>
     isAdminLike(user?.role) || c.myRole === 'owner' || c.myRole === 'editor' || c.myRole === 'viewer';
   const canArchive = (c: ContentClient) => isAdminLike(user?.role) || c.myRole === 'owner';
+  const canDelete = () => isAdminLike(user?.role);
 
   return (
     <div>
@@ -241,6 +254,15 @@ export default function ContentHubPage() {
                       {canArchive(c) && (
                         <button className="btn-secondary" onClick={() => handleArchiveToggle(c)}>
                           <i className={c.status === 'archived' ? 'fa-solid fa-box-open' : 'fa-solid fa-box-archive'} />
+                        </button>
+                      )}
+                      {canDelete() && (
+                        <button
+                          className="btn-secondary text-status-flagged"
+                          title="Delete calendar"
+                          onClick={() => handleDelete(c)}
+                        >
+                          <i className="fa-solid fa-trash" />
                         </button>
                       )}
                     </>
