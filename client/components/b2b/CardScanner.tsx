@@ -39,6 +39,14 @@ const FIELD_LABELS: Record<keyof FormState, string> = {
 
 const SCAN_FIELDS: (keyof FormState)[] = ['name', 'company', 'jobTitle', 'phone', 'email', 'website', 'address'];
 
+interface DuplicateInfo {
+  id: string;
+  name: string;
+  company: string;
+  capturedBy: string;
+  createdAt: string;
+}
+
 type Step = 'capture-front' | 'ask-back' | 'capture-back' | 'review';
 type Side = 'front' | 'back';
 type TorchCapabilities = MediaTrackCapabilities & { torch?: boolean };
@@ -74,6 +82,7 @@ export default function CardScanner() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
+  const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
 
   useEffect(() => {
     unmountedRef.current = false;
@@ -188,6 +197,7 @@ export default function CardScanner() {
     setForm(EMPTY_FORM);
     setConfirmed(false);
     setError('');
+    setDuplicate(null);
     setStep('capture-front');
     startCamera();
   }
@@ -262,6 +272,7 @@ export default function CardScanner() {
   async function scanCard(front: Blob, back: Blob | null) {
     setScanning(true);
     setError('');
+    setDuplicate(null);
     try {
       const formData = new FormData();
       formData.append('image', front, 'card-front.jpg');
@@ -276,7 +287,10 @@ export default function CardScanner() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || 'Could not read the card');
       }
-      const { fields } = (await res.json()) as { fields: Partial<FormState> };
+      const { fields, duplicate: dup } = (await res.json()) as {
+        fields: Partial<FormState>;
+        duplicate: DuplicateInfo | null;
+      };
       setForm((f) => {
         const next = { ...f };
         for (const key of SCAN_FIELDS) {
@@ -284,6 +298,7 @@ export default function CardScanner() {
         }
         return next;
       });
+      setDuplicate(dup || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not auto-read the card — fill the fields in manually below.');
     } finally {
@@ -350,6 +365,10 @@ export default function CardScanner() {
           <div className="card space-y-3">
             <p className="text-xs text-gray-500">
               {step === 'capture-front' ? 'Capture the front of the card.' : 'Now capture the back of the card (optional info like address is often here).'}
+            </p>
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+              <i className="fa-solid fa-circle-info mr-1" />
+              Hold steady and fill the frame — a sharp, well-lit, glare-free photo reads far more accurately than a blurry one.
             </p>
             {cameraError ? (
               <p className="text-sm text-red-600">{cameraError}</p>
@@ -421,6 +440,14 @@ export default function CardScanner() {
             ) : (
               <>
                 <p className="text-xs text-gray-500">Auto-filled from the scan — review and correct before saving.</p>
+                {duplicate && (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                    <i className="fa-solid fa-triangle-exclamation mr-1" />
+                    Possible duplicate — matches {duplicate.name || duplicate.company || 'a contact'} captured by{' '}
+                    {duplicate.capturedBy || 'someone'} on {new Date(duplicate.createdAt).toLocaleDateString()}. Saving will be
+                    blocked if this is the same contact.
+                  </p>
+                )}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {(Object.keys(EMPTY_FORM) as (keyof FormState)[]).map((key) => (
                     <div key={key} className={key === 'notes' || key === 'address' ? 'sm:col-span-2' : ''}>

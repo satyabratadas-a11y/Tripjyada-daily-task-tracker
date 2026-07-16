@@ -17,6 +17,14 @@ type FormState = {
 
 type ItemStatus = 'pending' | 'scanning' | 'ready' | 'saving' | 'done' | 'scan-error' | 'save-error';
 
+interface DuplicateInfo {
+  id: string;
+  name: string;
+  company: string;
+  capturedBy: string;
+  createdAt: string;
+}
+
 type Item = {
   id: string;
   file: File;
@@ -27,6 +35,7 @@ type Item = {
   fields: FormState;
   confirmed: boolean;
   error: string;
+  duplicate: DuplicateInfo | null;
 };
 
 type PreparedItem = {
@@ -63,7 +72,7 @@ const SCAN_CONCURRENCY = 1;
 const SAVE_CONCURRENCY = 3;
 const MAX_BULK_ITEMS = 5;
 
-async function scanCardRemote(blob: Blob, uploadName: string): Promise<Partial<FormState>> {
+async function scanCardRemote(blob: Blob, uploadName: string): Promise<{ fields: Partial<FormState>; duplicate: DuplicateInfo | null }> {
   const formData = new FormData();
   formData.append('image', blob, uploadName);
 
@@ -76,8 +85,7 @@ async function scanCardRemote(blob: Blob, uploadName: string): Promise<Partial<F
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || 'Could not read the card');
   }
-  const { fields } = (await res.json()) as { fields: Partial<FormState> };
-  return fields;
+  return (await res.json()) as { fields: Partial<FormState>; duplicate: DuplicateInfo | null };
 }
 
 export default function BulkCardUpload() {
@@ -109,6 +117,7 @@ export default function BulkCardUpload() {
       fields: { ...EMPTY_FORM },
       confirmed: false,
       error: '',
+      duplicate: null,
     }));
     setItems(nextItems);
     setOpenItemId(nextItems[0]?.id || null);
@@ -144,7 +153,7 @@ export default function BulkCardUpload() {
     if (queue.length === 0) return;
 
     setProcessing(true);
-    queue.forEach((item) => updateItem(item.id, { status: 'scanning', error: '', confirmed: false }));
+    queue.forEach((item) => updateItem(item.id, { status: 'scanning', error: '', confirmed: false, duplicate: null }));
     const prepared = await Promise.all(queue.map(prepareItem));
 
     let nextIndex = 0;
@@ -154,7 +163,7 @@ export default function BulkCardUpload() {
         nextIndex += 1;
         try {
           // eslint-disable-next-line no-await-in-loop
-          const fields = await scanCardRemote(preparedItem.upload, preparedItem.uploadName);
+          const { fields, duplicate } = await scanCardRemote(preparedItem.upload, preparedItem.uploadName);
           updateItem(preparedItem.item.id, {
             upload: preparedItem.upload,
             uploadName: preparedItem.uploadName,
@@ -162,6 +171,7 @@ export default function BulkCardUpload() {
             fields: { ...EMPTY_FORM, ...fields },
             confirmed: false,
             error: '',
+            duplicate: duplicate || null,
           });
         } catch (error) {
           updateItem(preparedItem.item.id, {
@@ -284,6 +294,10 @@ export default function BulkCardUpload() {
       {items.length === 0 ? (
         <div className="card space-y-3 text-center">
           <p className="text-sm text-gray-500">Select up to {MAX_BULK_ITEMS} clear photos, one per business card.</p>
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-left text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+            <i className="fa-solid fa-circle-info mr-1" />
+            Sharp, well-lit, glare-free photos read far more accurately than blurry ones.
+          </p>
           <button type="button" className="btn-primary w-full" onClick={() => fileInputRef.current?.click()}>
             <i className="fa-solid fa-upload" />
             Choose files
@@ -333,6 +347,13 @@ export default function BulkCardUpload() {
                       <img src={item.previewUrl} alt="Business card to review" className="max-h-64 w-full rounded-lg object-contain" />
 
                       {item.error && <p className="text-sm text-red-600">{item.error}</p>}
+                      {item.duplicate && (
+                        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                          <i className="fa-solid fa-triangle-exclamation mr-1" />
+                          Possible duplicate — matches {item.duplicate.name || item.duplicate.company || 'a contact'} captured by{' '}
+                          {item.duplicate.capturedBy || 'someone'} on {new Date(item.duplicate.createdAt).toLocaleDateString()}.
+                        </p>
+                      )}
 
                       {hasFields && (
                         <>
