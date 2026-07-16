@@ -1,15 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { AdminStatusBadge, MemberStatusBadge, DayTypeCell, SourceBadge } from '@/components/StatusBadge';
 import MonthCalendar from '@/components/MonthCalendar';
 import SummaryBar from '@/components/SummaryBar';
 import type { Task } from '@/lib/types';
-
-const ADMIN_STATUS_OPTIONS = ['pending', 'completed', 'on_progress', 'incomplete', 'flagged'];
 
 function formatTaskDate(date: string) {
   return new Date(date).toLocaleDateString(undefined, {
@@ -20,7 +17,15 @@ function formatTaskDate(date: string) {
   });
 }
 
-function AddDayForm({ employeeId, defaultDate, onAdded }: { employeeId: string; defaultDate: string; onAdded: () => void }) {
+function sortTasksByDate(tasks: Task[]) {
+  return [...tasks].sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.createdAt.localeCompare(b.createdAt);
+  });
+}
+
+function AddTaskForm({ defaultDate, onAdded }: { defaultDate: string; onAdded: (task: Task) => void }) {
   const [date, setDate] = useState(defaultDate);
   const [assignedTask, setAssignedTask] = useState('');
   const [brief, setBrief] = useState('');
@@ -33,12 +38,17 @@ function AddDayForm({ employeeId, defaultDate, onAdded }: { employeeId: string; 
     setSaving(true);
     setError('');
     try {
-      await api.post('/api/tasks', { employeeId, date, assignedTask, brief });
+      const { task } = await api.post<{ task: Task }>('/api/tasks/self', {
+        date,
+        assignedTask,
+        brief,
+        memberStatus: 'on_progress',
+      });
       setAssignedTask('');
       setBrief('');
-      onAdded();
+      onAdded(task);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to assign');
+      setError(err instanceof ApiError ? err.message : 'Failed to add task');
     } finally {
       setSaving(false);
     }
@@ -51,41 +61,43 @@ function AddDayForm({ employeeId, defaultDate, onAdded }: { employeeId: string; 
         <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Assigned task</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Task</label>
         <input className="input" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
       </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief (optional)</label>
         <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
       </div>
       <button className="btn-primary w-full sm:w-auto" disabled={saving || !assignedTask} onClick={handleAdd}>
-        {saving ? 'Saving…' : 'Assign'}
+        {saving ? 'Adding…' : 'Add task'}
       </button>
       {error && <p className="w-full text-xs text-status-flagged">{error}</p>}
     </div>
   );
 }
 
-function EditableRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task) => void; onDeleted: (id: string) => void }) {
+function OwnRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task) => void; onDeleted: (id: string) => void }) {
+  const editableTitle = task.createdBy === 'employee';
   const [editing, setEditing] = useState(false);
   const [assignedTask, setAssignedTask] = useState(task.assignedTask);
   const [brief, setBrief] = useState(task.brief);
-  const [adminStatus, setAdminStatus] = useState(task.adminStatus);
-  const [reviewerNotes, setReviewerNotes] = useState(task.reviewerNotes);
+  const [proofLink, setProofLink] = useState(task.proofLink);
+  const [memberStatus, setMemberStatus] = useState(task.memberStatus);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const selectValue = memberStatus === 'not_started' ? '' : memberStatus;
 
   async function handleSave() {
     setSaving(true);
     setError('');
     try {
-      const { task: updated } = await api.patch<{ task: Task }>(`/api/tasks/${task._id}/admin`, {
-        assignedTask,
-        brief,
-        adminStatus,
-        reviewerNotes,
-      });
+      const body: Record<string, string> = { proofLink, memberStatus };
+      if (editableTitle) {
+        body.assignedTask = assignedTask;
+        body.brief = brief;
+      }
+      const { task: updated } = await api.patch<{ task: Task }>(`/api/tasks/${task._id}/employee`, body);
       onSaved(updated);
       setEditing(false);
     } catch (err) {
@@ -131,11 +143,8 @@ function EditableRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Ta
         <td data-label="Source">
           <SourceBadge value={task.createdBy} />
         </td>
-        <td data-label="Assigned task">{task.assignedTask || <span className="text-gray-400">—</span>}</td>
+        <td data-label="Task">{task.assignedTask || <span className="text-gray-400">—</span>}</td>
         <td data-label="Brief">{task.brief || <span className="text-gray-400">—</span>}</td>
-        <td data-label="Member status">
-          <MemberStatusBadge value={task.memberStatus} />
-        </td>
         <td data-label="Proof link">
           {task.proofLink ? (
             <a href={task.proofLink} target="_blank" rel="noreferrer" className="text-brand hover:underline">
@@ -145,17 +154,30 @@ function EditableRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Ta
             <span className="text-gray-400">—</span>
           )}
         </td>
+        <td data-label="My status">
+          <MemberStatusBadge value={task.memberStatus} />
+        </td>
         <td data-label="Verified status">
           <AdminStatusBadge value={task.adminStatus} />
         </td>
-        <td data-label="Reviewer notes">{task.reviewerNotes || <span className="text-gray-400">—</span>}</td>
+        <td data-label="Reviewer notes">
+          {task.reviewerNotes ? (
+            task.reviewerNotes
+          ) : task.adminStatus === 'flagged' ? (
+            <span className="font-medium text-status-flagged">Flagged</span>
+          ) : (
+            <span className="text-gray-400">—</span>
+          )}
+        </td>
         <td data-label="Actions" className="flex flex-wrap gap-2">
           <button className="btn-secondary" onClick={() => setEditing(true)}>
-            Edit
+            Update
           </button>
-          <button className="btn-secondary text-status-flagged" disabled={deleting} onClick={handleDelete}>
-            {deleting ? '…' : 'Delete'}
-          </button>
+          {editableTitle && (
+            <button className="btn-secondary text-status-flagged" disabled={deleting} onClick={handleDelete}>
+              {deleting ? '…' : 'Delete'}
+            </button>
+          )}
         </td>
       </tr>
     );
@@ -165,25 +187,20 @@ function EditableRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Ta
     <tr>
       <td colSpan={10}>
         <div className="flex flex-wrap items-end gap-2 py-2">
-          <input className="input w-full sm:flex-1" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} placeholder="Assigned task" />
-          <input className="input w-full sm:flex-1" value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Brief" />
-          <select
-            className="input w-full sm:w-auto"
-            value={adminStatus}
-            onChange={(e) => setAdminStatus(e.target.value as Task['adminStatus'])}
-          >
-            {ADMIN_STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
+          {editableTitle && (
+            <>
+              <input className="input w-full sm:flex-1" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} placeholder="Task" />
+              <input className="input w-full sm:flex-1" value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Brief" />
+            </>
+          )}
+          <input className="input w-full sm:flex-1" value={proofLink} onChange={(e) => setProofLink(e.target.value)} placeholder="Proof link" />
+          <select className="input w-full sm:w-auto" value={selectValue} onChange={(e) => setMemberStatus(e.target.value as Task['memberStatus'])}>
+            <option value="" disabled>
+              Select your update
+            </option>
+            <option value="on_progress">On Progress</option>
+            <option value="done">Done</option>
           </select>
-          <input
-            className="input w-full sm:flex-1"
-            value={reviewerNotes}
-            onChange={(e) => setReviewerNotes(e.target.value)}
-            placeholder="Reviewer notes"
-          />
           <button className="btn-primary w-full sm:w-auto" disabled={saving} onClick={handleSave}>
             {saving ? 'Saving…' : 'Save'}
           </button>
@@ -197,17 +214,16 @@ function EditableRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Ta
   );
 }
 
-export default function EmployeeMonthlyLogPage() {
-  const params = useParams<{ id: string }>();
-  const searchParams = useSearchParams();
-  const now = new Date();
-  const [month, setMonth] = useState(Number(searchParams.get('month')) || now.getMonth() + 1);
-  const [year, setYear] = useState(Number(searchParams.get('year')) || now.getFullYear());
-  const queryDate = searchParams.get('date');
-  // Admins only ever self-add their tasks (there's no "assign" concept above employee level), so
-  // the assign-a-task form only makes sense when reviewing an employee's log.
-  const canAssignTasks = (searchParams.get('targetRole') || 'employee') === 'employee';
+/**
+ * Shows the current user's own monthly task log (self-added, calling /api/tasks without an
+ * employeeId so the backend defaults to "my own tasks"). Used by employees and, identically, by
+ * admins logging their own daily work for a super admin to review.
+ */
+export default function OwnLogView() {
   const { refresh } = useAuth();
+  const now = new Date();
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,9 +233,7 @@ export default function EmployeeMonthlyLogPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await api.get<{ tasks: Task[] }>(
-        `/api/tasks?employeeId=${params.id}&month=${month}&year=${year}`
-      );
+      const data = await api.get<{ tasks: Task[] }>(`/api/tasks?month=${month}&year=${year}`);
       setTasks(data.tasks);
     } catch (err) {
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
@@ -234,14 +248,9 @@ export default function EmployeeMonthlyLogPage() {
 
   useEffect(() => {
     load();
-    setSelectedDate((current) => {
-      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-      if (queryDate && queryDate.startsWith(monthKey)) return queryDate;
-      if (current && current.startsWith(monthKey)) return current;
-      return null;
-    });
+    setSelectedDate(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id, month, year, queryDate]);
+  }, [month, year]);
 
   const filteredTasks = useMemo(
     () => (selectedDate ? tasks.filter((t) => t.date.slice(0, 10) === selectedDate) : tasks),
@@ -261,10 +270,24 @@ export default function EmployeeMonthlyLogPage() {
   const defaultAddDate = selectedDate || new Date().toISOString().slice(0, 10);
   const flaggedTasks = filteredTasks.filter((t) => t.adminStatus === 'flagged');
 
+  function handleTaskAdded(task: Task) {
+    const taskDateKey = task.date.slice(0, 10);
+    const [taskYear, taskMonth] = taskDateKey.split('-').map(Number);
+
+    if (taskYear === year && taskMonth === month) {
+      setTasks((prev) => sortTasksByDate([...prev, task]));
+      return;
+    }
+
+    setSelectedDate(taskDateKey);
+    setMonth(taskMonth);
+    setYear(taskYear);
+  }
+
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-lg font-semibold">Task review</h1>
+        <h1 className="text-lg font-semibold">My Monthly Log</h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -273,16 +296,11 @@ export default function EmployeeMonthlyLogPage() {
               </option>
             ))}
           </select>
-          <input
-            type="number"
-            className="input w-full sm:w-24"
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-          />
+          <input type="number" className="input w-full sm:w-24" value={year} onChange={(e) => setYear(Number(e.target.value))} />
         </div>
       </div>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-        Review the employee&apos;s reported status here, add remarks, and set the verified result. Progress bars use the admin status only.
+        Your reviewer&apos;s remarks and verified status control the progress view. Your update is only `On Progress` or `Done`.
       </p>
 
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
@@ -291,31 +309,28 @@ export default function EmployeeMonthlyLogPage() {
         <MonthCalendar month={month} year={year} tasks={tasks} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <div className="min-w-0">
           <SummaryBar stats={stats} />
-          {canAssignTasks ? (
-            <AddDayForm employeeId={params.id} defaultDate={defaultAddDate} onAdded={load} />
-          ) : (
-            <p className="card mb-6 text-sm text-gray-500 dark:text-gray-400">
-              Admins add their own tasks — there&apos;s nothing to assign here, only to review below.
-            </p>
-          )}
+          <AddTaskForm defaultDate={defaultAddDate} onAdded={handleTaskAdded} />
         </div>
       </div>
 
       {flaggedTasks.length > 0 && (
         <div className="mb-4 rounded-lg border border-status-flagged/40 bg-status-flagged/10 p-4 text-sm text-red-900">
-          <p className="font-semibold">Flagged in this review</p>
+          <p className="font-semibold">Flagged task alert</p>
           <p>
             {flaggedTasks.length === 1
-              ? `A task is flagged for ${formatTaskDate(flaggedTasks[0].date)}.`
-              : `${flaggedTasks.length} tasks are flagged in the current view.`}
+              ? `A task was flagged for ${formatTaskDate(flaggedTasks[0].date)}.`
+              : `${flaggedTasks.length} tasks in this view have been flagged.`}
           </p>
+          <p>Flagged dates are highlighted red in the calendar and table.</p>
         </div>
       )}
 
       {loading ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : filteredTasks.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{selectedDate ? 'No tasks on this day.' : 'No tasks this month yet.'}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {selectedDate ? 'No tasks on this day.' : 'No tasks logged this month yet.'}
+        </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
           <table className="tracker w-full">
@@ -324,10 +339,10 @@ export default function EmployeeMonthlyLogPage() {
                 <th>Date</th>
                 <th>Day type</th>
                 <th>Source</th>
-                <th>Assigned task</th>
+                <th>Task</th>
                 <th>Brief</th>
-                <th>Member status</th>
                 <th>Proof link</th>
+                <th>My status</th>
                 <th>Verified status</th>
                 <th>Reviewer notes</th>
                 <th></th>
@@ -335,10 +350,12 @@ export default function EmployeeMonthlyLogPage() {
             </thead>
             <tbody>
               {filteredTasks.map((t) => (
-                <EditableRow
+                <OwnRow
                   key={t._id}
                   task={t}
-                  onSaved={(updated) => setTasks((prev) => prev.map((x) => (x._id === updated._id ? updated : x)))}
+                  onSaved={(updated) =>
+                    setTasks((prev) => sortTasksByDate(prev.map((x) => (x._id === updated._id ? updated : x))))
+                  }
                   onDeleted={(id) => setTasks((prev) => prev.filter((x) => x._id !== id))}
                 />
               ))}

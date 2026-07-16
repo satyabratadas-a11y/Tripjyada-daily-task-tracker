@@ -133,8 +133,10 @@ function ActiveRow({
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
+  const { user: viewer } = useAuth();
   const isSelf = currentUserId === user.id;
   const isDirty = name !== user.name || jobTitle !== user.jobTitle || role !== user.role || status !== user.status;
+  const canReviewTasks = user.role === 'employee' || (user.role === 'admin' && isSuperAdmin(viewer?.role));
 
   async function save() {
     setSaving(true);
@@ -195,8 +197,11 @@ function ActiveRow({
       </td>
       <td data-label="Actions">
         <div className="flex flex-wrap gap-2">
-          {user.role === 'employee' && (
-            <Link href={`/admin/employees/${user.id}?month=${month}&year=${year}`} className="btn-secondary">
+          {canReviewTasks && (
+            <Link
+              href={`/admin/employees/${user.id}?month=${month}&year=${year}&targetRole=${user.role}`}
+              className="btn-secondary"
+            >
               Review tasks
             </Link>
           )}

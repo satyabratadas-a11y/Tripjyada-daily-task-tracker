@@ -2,6 +2,6 @@
 
 import OwnLogView from '@/components/tasks/OwnLogView';
 
-export default function EmployeeLogPage() {
+export default function AdminMyLogPage() {
   return <OwnLogView />;
 }

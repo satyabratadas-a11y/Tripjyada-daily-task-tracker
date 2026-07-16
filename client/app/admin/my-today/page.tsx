@@ -2,6 +2,6 @@
 
 import OwnTodayView from '@/components/tasks/OwnTodayView';
 
-export default function EmployeeTodayPage() {
+export default function AdminMyTodayPage() {
   return <OwnTodayView />;
 }
