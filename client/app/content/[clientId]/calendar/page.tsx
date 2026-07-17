@@ -76,6 +76,21 @@ function buildGridDays(year: number, month: number) {
   });
 }
 
+function EntryChipContent({ entry }: { entry: ContentEntry }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${PLATFORM_DOT[entry.platform] || 'bg-brand'}`} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-semibold">{entry.idea || `${entry.format} · ${entry.platform}`}</p>
+        <div className="mt-1 flex items-center justify-between gap-2 text-[10px] opacity-75">
+          <span className="truncate font-mono">{entry.time || entry.platform}</span>
+          <span className="truncate uppercase tracking-wide">{entry.format}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EntryChip({ entry, onClick }: { entry: ContentEntry; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: entry.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, touchAction: 'none' as const } : { touchAction: 'none' as const };
@@ -92,16 +107,24 @@ function EntryChip({ entry, onClick }: { entry: ContentEntry; onClick: () => voi
       } ${isDragging ? 'opacity-20 shadow-none ring-0' : ''}`}
       title={entry.idea}
     >
-      <div className="flex items-start gap-2">
-        <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${PLATFORM_DOT[entry.platform] || 'bg-brand'}`} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{entry.idea || `${entry.format} · ${entry.platform}`}</p>
-          <div className="mt-1 flex items-center justify-between gap-2 text-[10px] opacity-75">
-            <span className="truncate font-mono">{entry.time || entry.platform}</span>
-            <span className="truncate uppercase tracking-wide">{entry.format}</span>
-          </div>
-        </div>
-      </div>
+      <EntryChipContent entry={entry} />
+    </button>
+  );
+}
+
+// Used on the small-screen agenda list, which isn't part of the drag-and-drop grid — dragging a
+// card between long, scrolling day rows on touch isn't practical UX anyway, and the entry drawer
+// already lets you change a post's date directly.
+function AgendaEntryChip({ entry, onClick }: { entry: ContentEntry; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`block w-full rounded-xl border border-white/70 px-2 py-1.5 text-left text-[11px] font-medium shadow-sm ring-1 ring-black/5 transition active:scale-[0.99] dark:border-white/10 dark:ring-white/10 ${
+        STATUS_CHIP[entry.status] || STATUS_CHIP.Idea
+      }`}
+      title={entry.idea}
+    >
+      <EntryChipContent entry={entry} />
     </button>
   );
 }
@@ -183,7 +206,7 @@ function DayCell({
   return (
     <div
       ref={setNodeRef}
-      className={`group relative min-h-[152px] overflow-hidden rounded-2xl border p-2.5 transition duration-200 ${
+      className={`group relative min-h-[130px] overflow-hidden rounded-2xl border p-2 transition duration-200 md:min-h-[140px] lg:min-h-[152px] lg:p-2.5 ${
         isOver
           ? 'border-brand/50 bg-brand/10 shadow-lg shadow-brand/10'
           : isToday
@@ -264,6 +287,86 @@ function DayCell({
           {canEdit ? 'Click + to plan a post here' : 'No content planned'}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// A 7-column grid stops being readable once cells get narrower than their content — on a phone
+// (or a desktop window with devtools eating half the width) it squeezes into unreadable slivers
+// instead of wrapping. Below md, this flat agenda list replaces the grid: one full-width row per
+// day of the current month, in the same style Notion's own calendar falls back to on narrow
+// viewports rather than shrinking the grid past the point of usefulness.
+function AgendaDayRow({
+  date,
+  entries,
+  canEdit,
+  onOpenEntry,
+  onAddEntry,
+}: {
+  date: Date;
+  entries: ContentEntry[];
+  canEdit: boolean;
+  onOpenEntry: (id: string) => void;
+  onAddEntry: (dateKey: string) => void;
+}) {
+  const dateKey = toKey(date);
+  const todayKey = toKey(new Date());
+  const isToday = dateKey === todayKey;
+  const isWeekend = date.getUTCDay() === 0 || date.getUTCDay() === 6;
+  const countLabel = entries.length === 1 ? '1 post' : `${entries.length} posts`;
+
+  return (
+    <div
+      className={`rounded-2xl border p-3 ${
+        isToday
+          ? 'border-brand/30 bg-gradient-to-br from-brand/10 via-white to-orange-50 shadow-sm dark:border-brand/30 dark:from-brand/10 dark:via-ink-light dark:to-orange-500/10'
+          : isWeekend
+            ? 'border-orange-100 bg-orange-50/60 dark:border-orange-500/10 dark:bg-orange-500/5'
+            : 'border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-ink-light'
+      }`}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <span
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+              isToday ? 'bg-brand text-white shadow-sm' : 'bg-black/5 text-gray-700 dark:bg-white/10 dark:text-gray-200'
+            }`}
+          >
+            {date.getUTCDate()}
+          </span>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
+              {WEEKDAY_LABELS[date.getUTCDay()]}
+            </p>
+            {entries.length > 0 && <p className="text-[11px] text-gray-500 dark:text-gray-400">{countLabel}</p>}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onAddEntry(dateKey)}
+          disabled={!canEdit}
+          title={canEdit ? 'Add content to this day' : 'You can view content for this day'}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs transition ${
+            canEdit
+              ? 'border-gray-200 bg-white text-gray-400 shadow-sm hover:border-brand hover:bg-brand hover:text-white dark:border-white/10 dark:bg-white/5 dark:text-gray-400 dark:hover:border-brand dark:hover:bg-brand'
+              : 'cursor-not-allowed border-gray-100 bg-gray-50 text-gray-300 dark:border-white/5 dark:bg-white/5 dark:text-gray-600'
+          }`}
+        >
+          <i className="fa-solid fa-plus" />
+        </button>
+      </div>
+
+      {entries.length > 0 ? (
+        <div className="space-y-1.5">
+          {entries.map((e) => (
+            <AgendaEntryChip key={e.id} entry={e} onClick={() => onOpenEntry(e.id)} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-[11px] text-gray-400 dark:text-gray-500">
+          {canEdit ? 'Nothing planned — tap + to add.' : 'No content planned.'}
+        </p>
+      )}
     </div>
   );
 }
@@ -497,7 +600,8 @@ export default function MonthlyCalendarPage() {
           ))}
           <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
             <i className="fa-solid fa-hand-pointer mr-1 text-brand" />
-            Click a card to edit it. Drag cards to move them between days.
+            <span className="hidden md:inline">Click a card to edit it. Drag cards to move them between days.</span>
+            <span className="md:hidden">Tap a card to edit it.</span>
           </span>
         </div>
       </div>
@@ -506,7 +610,7 @@ export default function MonthlyCalendarPage() {
 
       {error && <p className="mb-3 text-sm text-status-flagged">{error}</p>}
 
-      <div className="mb-1 grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">
+      <div className="mb-1 hidden grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 md:grid">
         {WEEKDAY_LABELS.map((d, index) => (
           <div
             key={d}
@@ -524,27 +628,52 @@ export default function MonthlyCalendarPage() {
       {loading ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : (
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
-          <div className="grid grid-cols-7 gap-2">
-            {days.map((d) => {
-              const key = toKey(d);
-              return (
-                <DayCell
-                  key={key}
-                  date={d}
-                  isCurrentMonth={d.getUTCMonth() + 1 === month}
-                  entries={entriesByDate.get(key) || []}
-                  canEdit={canEdit}
-                  onOpenEntry={setOpenEntryId}
-                  onAddEntry={canEdit ? setNewEntryDate : () => {}}
-                />
-              );
-            })}
+        <>
+          {/* Below md: a full-width agenda list, one row per day of the current month — a 7-column
+             grid has no room left to be readable once the viewport gets this narrow. */}
+          <div className="space-y-2 md:hidden">
+            {days
+              .filter((d) => d.getUTCMonth() + 1 === month)
+              .map((d) => {
+                const key = toKey(d);
+                return (
+                  <AgendaDayRow
+                    key={key}
+                    date={d}
+                    entries={entriesByDate.get(key) || []}
+                    canEdit={canEdit}
+                    onOpenEntry={setOpenEntryId}
+                    onAddEntry={canEdit ? setNewEntryDate : () => {}}
+                  />
+                );
+              })}
           </div>
-          <DragOverlay zIndex={80}>
-            {activeDragEntry ? <DragEntryOverlay entry={activeDragEntry} /> : null}
-          </DragOverlay>
-        </DndContext>
+
+          {/* md and up: the full drag-and-drop month grid. */}
+          <div className="hidden md:block">
+            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
+              <div className="grid grid-cols-7 gap-1.5 lg:gap-2">
+                {days.map((d) => {
+                  const key = toKey(d);
+                  return (
+                    <DayCell
+                      key={key}
+                      date={d}
+                      isCurrentMonth={d.getUTCMonth() + 1 === month}
+                      entries={entriesByDate.get(key) || []}
+                      canEdit={canEdit}
+                      onOpenEntry={setOpenEntryId}
+                      onAddEntry={canEdit ? setNewEntryDate : () => {}}
+                    />
+                  );
+                })}
+              </div>
+              <DragOverlay zIndex={80}>
+                {activeDragEntry ? <DragEntryOverlay entry={activeDragEntry} /> : null}
+              </DragOverlay>
+            </DndContext>
+          </div>
+        </>
       )}
 
       {newEntryDate && (
