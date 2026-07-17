@@ -207,9 +207,6 @@ export default function EmployeeMonthlyLogPage() {
   // Admins only ever self-add their tasks (there's no "assign" concept above employee level), so
   // the assign-a-task form only makes sense when reviewing an employee's log.
   const canAssignTasks = (searchParams.get('targetRole') || 'employee') === 'employee';
-  // Set by the super admin's Monthly Review page — bypasses the Done-only filter so flagged and
-  // in-progress tasks show up too, for oversight rather than the permanent-record view.
-  const allStatuses = searchParams.get('allStatuses') === 'true';
   const { refresh } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -221,7 +218,7 @@ export default function EmployeeMonthlyLogPage() {
     setError('');
     try {
       const data = await api.get<{ tasks: Task[] }>(
-        `/api/tasks?employeeId=${params.id}&month=${month}&year=${year}${allStatuses ? '&allStatuses=true' : ''}`
+        `/api/tasks?employeeId=${params.id}&month=${month}&year=${year}`
       );
       setTasks(data.tasks);
     } catch (err) {
@@ -244,7 +241,7 @@ export default function EmployeeMonthlyLogPage() {
       return null;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id, month, year, queryDate, allStatuses]);
+  }, [params.id, month, year, queryDate]);
 
   const filteredTasks = useMemo(
     () => (selectedDate ? tasks.filter((t) => t.date.slice(0, 10) === selectedDate) : tasks),
@@ -286,14 +283,7 @@ export default function EmployeeMonthlyLogPage() {
       </div>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         Review the employee&apos;s reported status here, add remarks, and set the verified result. Progress bars use the admin
-        status only.{' '}
-        {allStatuses ? (
-          <>Showing every task this month, regardless of status.</>
-        ) : (
-          <>
-            Only tasks marked <strong>Done</strong> appear here — On Progress tasks stay on the Today panel until finished.
-          </>
-        )}
+        status only. Showing every task this month, regardless of status.
       </p>
 
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}

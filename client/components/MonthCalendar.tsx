@@ -26,8 +26,8 @@ function summarize(tasks: Task[]): Map<string, DaySummary> {
 }
 
 // Dots are deliberately sparse: today gets a green marker so it's easy to spot at a glance, a day
-// with a done-but-not-yet-verified task gets red since that's the one actionable state left once
-// the log only holds Done tasks, and every other day stays plain — no dot at all.
+// with an unreviewed task gets red as the one actionable state, and every other day stays plain —
+// no dot at all.
 function dotColor(summary: DaySummary | undefined, isToday: boolean) {
   if (summary && summary.unreviewed > 0) return 'bg-status-flagged';
   if (isToday) return 'bg-status-completed';

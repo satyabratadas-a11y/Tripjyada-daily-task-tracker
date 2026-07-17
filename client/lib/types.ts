@@ -16,7 +16,7 @@ export interface User {
 
 export type DayType = 'working' | 'optional_sunday';
 export type AdminStatus = 'pending' | 'completed' | 'on_progress' | 'incomplete' | 'flagged';
-export type MemberStatus = 'not_started' | 'on_progress' | 'done';
+export type MemberStatus = 'not_started' | 'on_progress' | 'done' | 'not_done';
 
 export type CreatedBy = 'admin' | 'employee';
 

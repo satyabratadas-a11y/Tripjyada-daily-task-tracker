@@ -126,7 +126,7 @@ export default function MonthlyReviewPage() {
                     </td>
                     <td data-label="Actions">
                       <Link
-                        href={`/admin/employees/${row.employee.id}?month=${month}&year=${year}&targetRole=employee&allStatuses=true`}
+                        href={`/admin/employees/${row.employee.id}?month=${month}&year=${year}&targetRole=employee`}
                         className="btn-secondary"
                       >
                         View month

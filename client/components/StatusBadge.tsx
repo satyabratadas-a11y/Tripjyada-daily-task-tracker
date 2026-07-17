@@ -22,12 +22,14 @@ const ADMIN_STATUS_LABELS: Record<string, string> = {
 const MEMBER_STATUS_LABELS: Record<string, string> = {
   done: 'Done',
   on_progress: 'On Progress',
+  not_done: 'Not Done',
   not_started: 'No Update Yet',
 };
 
 const MEMBER_STATUS_STYLES: Record<string, string> = {
   done: 'border-status-completed/30 bg-status-completed/10 text-green-800 dark:text-green-300',
   on_progress: 'border-status-progress/40 bg-status-progress/15 text-amber-900 dark:text-amber-300',
+  not_done: 'border-status-flagged/40 bg-status-flagged/10 text-red-800 dark:text-red-300',
   not_started: 'border-gray-300 bg-gray-50 text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300',
 };
 

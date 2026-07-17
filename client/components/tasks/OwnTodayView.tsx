@@ -179,6 +179,7 @@ function TaskCard({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task)
             </option>
             <option value="on_progress">On Progress</option>
             <option value="done">Done</option>
+            <option value="not_done">Not Done</option>
           </select>
         </div>
       </div>
@@ -250,7 +251,7 @@ export default function OwnTodayView() {
         {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
       </p>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-        Your update is only `On Progress` or `Done`. Progress is calculated from your reviewer&apos;s verified status.
+        Your update is `On Progress`, `Done`, or `Not Done`. Progress is calculated from your reviewer&apos;s verified status.
       </p>
 
       {!loading && <SummaryBar stats={stats} />}

@@ -200,6 +200,7 @@ function OwnRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task) =
             </option>
             <option value="on_progress">On Progress</option>
             <option value="done">Done</option>
+            <option value="not_done">Not Done</option>
           </select>
           <button className="btn-primary w-full sm:w-auto" disabled={saving} onClick={handleSave}>
             {saving ? 'Saving…' : 'Save'}
@@ -300,9 +301,9 @@ export default function OwnLogView() {
         </div>
       </div>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-        Your reviewer&apos;s remarks and verified status control the progress view. Your update is only `On Progress` or `Done`.
-        Only tasks you&apos;ve marked <strong>Done</strong> appear in this monthly log — On Progress tasks stay on your Today
-        view until finished.
+        Your reviewer&apos;s remarks and verified status control the progress view. Your update is `On Progress`, `Done`, or
+        `Not Done`. Every task appears here on the day it was added, whatever its status — so nothing gets lost if you
+        forget to mark it done.
       </p>
 
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
