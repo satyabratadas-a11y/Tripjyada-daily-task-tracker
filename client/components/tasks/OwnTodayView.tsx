@@ -255,13 +255,19 @@ export default function OwnTodayView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const todayKey = new Date().toISOString().slice(0, 10);
   const stats = useMemo(
     () => [
-      { label: 'Total today', value: tasks.length, color: 'bg-gray-400' },
-      { label: 'Marked done by you', value: tasks.filter((t) => t.memberStatus === 'done').length, color: 'bg-status-completed' },
+      { label: 'Active tasks', value: tasks.length, color: 'bg-gray-400' },
+      {
+        label: 'Carried from earlier',
+        value: tasks.filter((t) => t.date.slice(0, 10) !== todayKey).length,
+        color: 'bg-status-progress',
+      },
       { label: 'Verified completed', value: tasks.filter((t) => t.adminStatus === 'completed').length, color: 'bg-status-completed' },
       { label: 'Flagged', value: tasks.filter((t) => t.adminStatus === 'flagged').length, color: 'bg-status-flagged' },
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [tasks]
   );
 
@@ -273,8 +279,8 @@ export default function OwnTodayView() {
       </p>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         Your update is `On Progress`, `Done`, or `Not Done`. Progress is calculated from your reviewer&apos;s verified status.
-        Any task still `On Progress` — including one you reopen from an older day in your monthly log — stays listed here
-        until you mark it Done or Not Done.
+        Any task still `On Progress` — including one you reopen from an older day in your monthly log — stays listed here.
+        Marking it Done or Not Done moves it off this list into your Monthly Log.
       </p>
 
       {!loading && <SummaryBar stats={stats} />}

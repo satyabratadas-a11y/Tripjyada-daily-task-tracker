@@ -25,21 +25,21 @@ function sortTasksByDate(tasks: Task[]) {
   });
 }
 
-function AddTaskForm({ defaultDate, onAdded }: { defaultDate: string; onAdded: (task: Task) => void }) {
-  const [date, setDate] = useState(defaultDate);
+// Self-adding is always for today, wherever this form is opened from — the calendar's selected
+// date only filters which day the table below is showing, it never sets where a new task lands.
+function AddTaskForm({ onAdded }: { onAdded: (task: Task) => void }) {
   const [assignedTask, setAssignedTask] = useState('');
   const [brief, setBrief] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => setDate(defaultDate), [defaultDate]);
-
   async function handleAdd() {
     setSaving(true);
     setError('');
     try {
+      const today = new Date().toISOString().slice(0, 10);
       const { task } = await api.post<{ task: Task }>('/api/tasks/self', {
-        date,
+        date: today,
         assignedTask,
         brief,
         memberStatus: 'on_progress',
@@ -56,12 +56,8 @@ function AddTaskForm({ defaultDate, onAdded }: { defaultDate: string; onAdded: (
 
   return (
     <div className="card mb-6 flex flex-wrap items-end gap-3">
-      <div className="w-full sm:w-auto">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Date</label>
-        <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
-      </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Task</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Task for today</label>
         <input className="input" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
       </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
@@ -268,7 +264,6 @@ export default function OwnLogView() {
     [filteredTasks]
   );
 
-  const defaultAddDate = selectedDate || new Date().toISOString().slice(0, 10);
   const flaggedTasks = filteredTasks.filter((t) => t.adminStatus === 'flagged');
 
   function handleTaskAdded(task: Task) {
@@ -312,7 +307,7 @@ export default function OwnLogView() {
         <MonthCalendar month={month} year={year} tasks={tasks} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <div className="min-w-0">
           <SummaryBar stats={stats} />
-          <AddTaskForm defaultDate={defaultAddDate} onAdded={handleTaskAdded} />
+          <AddTaskForm onAdded={handleTaskAdded} />
         </div>
       </div>
 
