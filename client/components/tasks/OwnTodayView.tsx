@@ -79,6 +79,9 @@ function AddTaskForm({ onAdded }: { onAdded: () => void }) {
 
 function TaskCard({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task) => void; onDeleted: (id: string) => void }) {
   const editableTitle = task.createdBy === 'employee';
+  const isFlagged = task.adminStatus === 'flagged';
+  // Flagged tasks open by default so the reviewer's remark isn't hidden behind a click.
+  const [expanded, setExpanded] = useState(isFlagged);
   const [assignedTask, setAssignedTask] = useState(task.assignedTask);
   const [brief, setBrief] = useState(task.brief);
   const [proofLink, setProofLink] = useState(task.proofLink);
@@ -93,7 +96,6 @@ function TaskCard({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task)
     memberStatus !== task.memberStatus ||
     (editableTitle && (assignedTask !== task.assignedTask || brief !== task.brief));
   const selectValue = memberStatus === 'not_started' ? '' : memberStatus;
-  const isFlagged = task.adminStatus === 'flagged';
 
   async function handleSave() {
     setSaving(true);
@@ -129,74 +131,93 @@ function TaskCard({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task)
   }
 
   return (
-    <div className={`card space-y-3 ${isFlagged ? 'border-status-flagged bg-status-flagged/5' : ''}`}>
-      <div className="flex items-start justify-between gap-2">
-        {editableTitle ? (
-          <input className="input flex-1 font-medium" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
-        ) : (
-          <p className="flex-1 text-sm font-medium">{task.assignedTask}</p>
-        )}
-        <SourceBadge value={task.createdBy} />
-      </div>
+    <div
+      className={`min-w-0 rounded-xl border shadow-sm transition-shadow duration-200 hover:shadow-md ${
+        isFlagged
+          ? 'border-status-flagged bg-status-flagged/5'
+          : 'border-gray-200 bg-white dark:border-white/10 dark:bg-ink-light'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center gap-2.5 p-4 text-left sm:p-5"
+      >
+        <i className={`fa-solid fa-chevron-${expanded ? 'down' : 'right'} shrink-0 text-xs text-gray-400`} />
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">{task.assignedTask || 'Untitled task'}</span>
+      </button>
 
-      {editableTitle ? (
-        <input className="input" placeholder="Brief / details" value={brief} onChange={(e) => setBrief(e.target.value)} />
-      ) : (
-        task.brief && <p className="text-sm text-gray-600 dark:text-gray-300">{task.brief}</p>
-      )}
+      {expanded && (
+        <div className="space-y-3 border-t border-gray-100 p-4 dark:border-white/10 sm:p-5">
+          <div className="flex items-start justify-between gap-2">
+            {editableTitle ? (
+              <input className="input flex-1 font-medium" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
+            ) : (
+              <p className="flex-1 text-sm font-medium">{task.assignedTask}</p>
+            )}
+            <SourceBadge value={task.createdBy} />
+          </div>
 
-      {isFlagged && (
-        <div className="rounded-md border border-status-flagged/40 bg-status-flagged/10 p-3 text-sm text-red-900">
-          <p className="font-semibold">Flagged for {formatTaskDate(task.date)}</p>
-          <p>This task was marked red by your reviewer for this date. Please review the remark and follow up.</p>
-          {task.reviewerNotes && <p className="mt-1">Remark: {task.reviewerNotes}</p>}
+          {editableTitle ? (
+            <input className="input" placeholder="Brief / details" value={brief} onChange={(e) => setBrief(e.target.value)} />
+          ) : (
+            task.brief && <p className="text-sm text-gray-600 dark:text-gray-300">{task.brief}</p>
+          )}
+
+          {isFlagged && (
+            <div className="rounded-md border border-status-flagged/40 bg-status-flagged/10 p-3 text-sm text-red-900">
+              <p className="font-semibold">Flagged for {formatTaskDate(task.date)}</p>
+              <p>This task was marked red by your reviewer for this date. Please review the remark and follow up.</p>
+              {task.reviewerNotes && <p className="mt-1">Remark: {task.reviewerNotes}</p>}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Verified status</span>
+            <AdminStatusBadge value={task.adminStatus} />
+          </div>
+          {task.reviewerNotes && !isFlagged && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="font-medium">Reviewer note: </span>
+              {task.reviewerNotes}
+            </p>
+          )}
+
+          <hr />
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Proof link</label>
+              <input className="input" value={proofLink} onChange={(e) => setProofLink(e.target.value)} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Your status</label>
+              <select className="input" value={selectValue} onChange={(e) => setMemberStatus(e.target.value as Task['memberStatus'])}>
+                <option value="" disabled>
+                  Select your update
+                </option>
+                <option value="on_progress">On Progress</option>
+                <option value="done">Done</option>
+                <option value="not_done">Not Done</option>
+              </select>
+            </div>
+          </div>
+
+          {error && <p className="text-xs text-status-flagged">{error}</p>}
+          {savedMsg && !dirty && <p className="text-xs text-status-completed">{savedMsg}</p>}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button className="btn-primary w-full sm:w-auto" disabled={saving || !dirty} onClick={handleSave}>
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            {editableTitle && (
+              <button className="btn-secondary w-full text-status-flagged sm:w-auto" disabled={deleting} onClick={handleDelete}>
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            )}
+          </div>
         </div>
       )}
-
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Verified status</span>
-        <AdminStatusBadge value={task.adminStatus} />
-      </div>
-      {task.reviewerNotes && !isFlagged && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          <span className="font-medium">Reviewer note: </span>
-          {task.reviewerNotes}
-        </p>
-      )}
-
-      <hr />
-
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Proof link</label>
-          <input className="input" value={proofLink} onChange={(e) => setProofLink(e.target.value)} />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Your status</label>
-          <select className="input" value={selectValue} onChange={(e) => setMemberStatus(e.target.value as Task['memberStatus'])}>
-            <option value="" disabled>
-              Select your update
-            </option>
-            <option value="on_progress">On Progress</option>
-            <option value="done">Done</option>
-            <option value="not_done">Not Done</option>
-          </select>
-        </div>
-      </div>
-
-      {error && <p className="text-xs text-status-flagged">{error}</p>}
-      {savedMsg && !dirty && <p className="text-xs text-status-completed">{savedMsg}</p>}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <button className="btn-primary w-full sm:w-auto" disabled={saving || !dirty} onClick={handleSave}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-        {editableTitle && (
-          <button className="btn-secondary w-full text-status-flagged sm:w-auto" disabled={deleting} onClick={handleDelete}>
-            {deleting ? 'Deleting…' : 'Delete'}
-          </button>
-        )}
-      </div>
     </div>
   );
 }
@@ -252,6 +273,8 @@ export default function OwnTodayView() {
       </p>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         Your update is `On Progress`, `Done`, or `Not Done`. Progress is calculated from your reviewer&apos;s verified status.
+        Any task still `On Progress` — including one you reopen from an older day in your monthly log — stays listed here
+        until you mark it Done or Not Done.
       </p>
 
       {!loading && <SummaryBar stats={stats} />}
