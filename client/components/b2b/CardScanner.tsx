@@ -92,6 +92,13 @@ export default function CardScanner() {
   // hidden <input> is clicked, since the change event itself carries no side information.
   const uploadSideRef = useRef<Side>('front');
 
+  // Gates the very first camera request behind an explicit tap rather than firing it from this
+  // component's mount effect — several mobile/in-app browsers won't reliably show the native
+  // permission prompt (or silently no-op) for a getUserMedia() call that isn't the direct result
+  // of a user gesture, which reads to the user as "the browser camera permission isn't working."
+  // Every later call (retake, add-back-side, "Try again") is already gesture-triggered by its own
+  // button, so only this first one needs the gate.
+  const [cameraRequested, setCameraRequested] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [torchSupported, setTorchSupported] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
@@ -111,7 +118,8 @@ export default function CardScanner() {
 
   useEffect(() => {
     unmountedRef.current = false;
-    startCamera();
+    // No startCamera() here — see the cameraRequested comment above; the first request waits for
+    // the "Enable camera" tap instead of firing automatically on mount.
 
     // Belt-and-braces beyond React's own cleanup: releases the camera immediately if the tab is
     // hidden/closed/navigated away from in a way that doesn't cleanly unmount this component.
@@ -129,6 +137,11 @@ export default function CardScanner() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function requestCamera() {
+    setCameraRequested(true);
+    startCamera();
+  }
 
   async function startCamera() {
     const myGeneration = ++cameraGenerationRef.current;
@@ -285,6 +298,7 @@ export default function CardScanner() {
   }
 
   function addBackSide() {
+    setCameraRequested(true);
     setStep('capture-back');
     startCamera();
   }
@@ -396,7 +410,16 @@ export default function CardScanner() {
               <i className="fa-solid fa-circle-info mr-1" />
               Hold steady and fill the frame — a sharp, well-lit, glare-free photo reads far more accurately than a blurry one.
             </p>
-            {cameraError ? (
+            {!cameraRequested ? (
+              <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center dark:border-white/10 dark:bg-white/5">
+                <i className="fa-solid fa-camera text-2xl text-gray-400" />
+                <p className="text-sm text-gray-600 dark:text-gray-300">Turn on your camera to scan this card.</p>
+                <button type="button" className="btn-primary" onClick={requestCamera}>
+                  <i className="fa-solid fa-camera" />
+                  Enable camera
+                </button>
+              </div>
+            ) : cameraError ? (
               <p className="text-sm text-red-600">{cameraError}</p>
             ) : (
               <div className="relative overflow-hidden rounded-lg bg-black">
@@ -420,7 +443,7 @@ export default function CardScanner() {
               </div>
             )}
             {torchError && <p className="text-xs text-red-600">{torchError}</p>}
-            {cameraError && (
+            {cameraRequested && cameraError && (
               <button type="button" className="btn-secondary w-full" onClick={startCamera}>
                 <i className="fa-solid fa-rotate-right" />
                 Try again
@@ -518,7 +541,7 @@ export default function CardScanner() {
         <div className="mx-auto flex max-w-xl gap-2">
           {step === 'capture-front' && (
             <>
-              {!cameraError && (
+              {cameraRequested && !cameraError && (
                 <button type="button" className="btn-primary flex-1" onClick={capture}>
                   <i className="fa-solid fa-camera" />
                   Capture card
@@ -532,7 +555,7 @@ export default function CardScanner() {
           )}
           {step === 'capture-back' && (
             <>
-              {!cameraError && (
+              {cameraRequested && !cameraError && (
                 <button type="button" className="btn-primary flex-1" onClick={capture}>
                   <i className="fa-solid fa-camera" />
                   Capture back
