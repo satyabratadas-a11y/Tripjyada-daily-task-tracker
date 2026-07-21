@@ -117,9 +117,9 @@ export default function MonthlyReviewPage() {
                   <tr key={row.employee.id}>
                     <td data-label="Team member">{row.employee.name}</td>
                     <td data-label="Role">
-                      {row.employee.role === 'employee'
+                      {(row.employee.role || 'employee') === 'employee'
                         ? row.employee.jobTitle || 'Employee'
-                        : `${row.employee.role.replaceAll('_', ' ')}${row.employee.jobTitle ? ` · ${row.employee.jobTitle}` : ''}`}
+                        : `${(row.employee.role || 'employee').replaceAll('_', ' ')}${row.employee.jobTitle ? ` · ${row.employee.jobTitle}` : ''}`}
                     </td>
                     <td data-label="Assigned">{row.assignedDays}</td>
                     <td data-label="Completed">{row.completed}</td>
@@ -130,7 +130,7 @@ export default function MonthlyReviewPage() {
                     </td>
                     <td data-label="Actions">
                       <Link
-                        href={`/admin/employees/${row.employee.id}?month=${month}&year=${year}&targetRole=${row.employee.role}`}
+                        href={`/admin/employees/${row.employee.id}?month=${month}&year=${year}&targetRole=${row.employee.role || 'employee'}`}
                         className="btn-secondary"
                       >
                         View month

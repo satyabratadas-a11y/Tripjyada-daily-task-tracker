@@ -37,7 +37,8 @@ export interface Task {
 }
 
 export interface DashboardRow {
-  employee: { id: string; name: string; jobTitle: string; role: Role };
+  // Optional while an older API deployment may still return rows without role.
+  employee: { id: string; name: string; jobTitle: string; role?: Role };
   assignedDays: number;
   completed: number;
   onProgress: number;

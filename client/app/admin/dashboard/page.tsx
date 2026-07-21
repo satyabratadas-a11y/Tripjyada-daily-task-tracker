@@ -98,9 +98,9 @@ export default function AdminDashboardPage() {
                       </Link>
                     </td>
                     <td data-label="Role">
-                      {row.employee.role === 'employee'
+                      {(row.employee.role || 'employee') === 'employee'
                         ? row.employee.jobTitle || 'Employee'
-                        : `${row.employee.role.replaceAll('_', ' ')}${row.employee.jobTitle ? ` · ${row.employee.jobTitle}` : ''}`}
+                        : `${(row.employee.role || 'employee').replaceAll('_', ' ')}${row.employee.jobTitle ? ` · ${row.employee.jobTitle}` : ''}`}
                     </td>
                     <td data-label="Assigned">{row.assignedDays}</td>
                     <td data-label="Completed">{row.completed}</td>

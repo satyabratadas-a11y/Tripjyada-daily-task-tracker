@@ -9,7 +9,7 @@ import SummaryBar from '@/components/SummaryBar';
 import type { Role, Task } from '@/lib/types';
 
 interface TodayRow {
-  employee: { id: string; name: string; jobTitle: string; role: Role };
+  employee: { id: string; name: string; jobTitle: string; role?: Role };
   tasks: Task[];
 }
 
@@ -237,7 +237,8 @@ function EmployeeSection({
   const completed = row.tasks.filter((task) => task.adminStatus === 'completed').length;
   const pending = row.tasks.filter((task) => task.adminStatus === 'pending').length;
   const flagged = row.tasks.filter((task) => task.adminStatus === 'flagged').length;
-  const reviewHref = `/admin/employees/${row.employee.id}?month=${month}&year=${year}&date=${date}&targetRole=${row.employee.role}`;
+  const employeeRole = row.employee.role || 'employee';
+  const reviewHref = `/admin/employees/${row.employee.id}?month=${month}&year=${year}&date=${date}&targetRole=${employeeRole}`;
 
   return (
     <div className="card h-full">
@@ -245,9 +246,9 @@ function EmployeeSection({
         <div>
           <p className="text-xl font-semibold text-brand">{row.employee.name}</p>
           <p className="text-sm capitalize text-gray-500 dark:text-gray-400">
-            {row.employee.role === 'employee'
+            {employeeRole === 'employee'
               ? row.employee.jobTitle || 'Employee'
-              : `${row.employee.role.replaceAll('_', ' ')}${row.employee.jobTitle ? ` · ${row.employee.jobTitle}` : ''}`}
+              : `${employeeRole.replaceAll('_', ' ')}${row.employee.jobTitle ? ` · ${row.employee.jobTitle}` : ''}`}
           </p>
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400 lg:text-right">
@@ -293,7 +294,7 @@ function EmployeeSection({
         </div>
       </div>
 
-      {row.employee.role === 'employee' && (
+      {employeeRole === 'employee' && (
         <div className="mt-4">
           <AssignForm employeeId={row.employee.id} date={date} onAssigned={onAssigned} />
         </div>
