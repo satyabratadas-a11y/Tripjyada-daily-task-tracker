@@ -330,7 +330,7 @@ export default function OwnLogView() {
           {selectedDate ? 'No tasks on this day.' : 'No tasks logged this month yet.'}
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
+        <div className="max-h-[600px] overflow-y-auto rounded-lg border border-gray-200 dark:border-white/10">
           <table className="tracker w-full">
             <thead>
               <tr>
