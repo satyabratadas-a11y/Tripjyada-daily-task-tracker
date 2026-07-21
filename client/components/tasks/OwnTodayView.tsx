@@ -228,7 +228,7 @@ function TaskCard({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task)
  * cross-employee oversight grid admins otherwise see at this same endpoint.
  */
 export default function OwnTodayView() {
-  const { refresh } = useAuth();
+  const { user, refresh } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -238,7 +238,14 @@ export default function OwnTodayView() {
     setError('');
     try {
       const data = await api.get<{ rows: TodayRow[] }>('/api/tasks/today?scope=own');
-      setTasks(data.rows[0]?.tasks || []);
+      // Never assume the first row belongs to the signed-in user. Older API deployments returned
+      // every employee row to admins even with scope=own, which made an admin see someone else's
+      // tasks here and then receive "You can only update your own task" when saving.
+      const ownRow = data.rows.find((row) => String(row.employee.id) === String(user?.id));
+      setTasks(ownRow?.tasks || []);
+      if (!ownRow && data.rows.length > 0) {
+        setError('Your task row was not returned by the server. Please refresh and try again.');
+      }
     } catch (err) {
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
         await refresh();
