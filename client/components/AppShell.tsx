@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { formatRoleLabel } from '@/lib/roles';
+import { formatRoleLabel, profileRouteForRole } from '@/lib/roles';
+import Avatar from '@/components/Avatar';
 
 interface NavItem {
   href: string;
@@ -51,6 +52,11 @@ export default function AppShell({
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {headerActions}
+          {user && (
+            <Link href={profileRouteForRole(user.role)} title="My profile">
+              <Avatar name={user.name} avatarUrl={user.avatarUrl} size={28} />
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setMobileOpen((open) => !open)}
@@ -107,7 +113,16 @@ export default function AppShell({
         </div>
       </aside>
       <div className="flex min-h-0 flex-1 flex-col md:ml-60">
-        {headerActions && <div className="hidden shrink-0 items-center justify-end gap-2 bg-ink px-6 py-2 md:flex">{headerActions}</div>}
+        {(headerActions || user) && (
+          <div className="hidden shrink-0 items-center justify-end gap-3 bg-ink px-6 py-2 md:flex">
+            {headerActions}
+            {user && (
+              <Link href={profileRouteForRole(user.role)} title="My profile">
+                <Avatar name={user.name} avatarUrl={user.avatarUrl} size={32} />
+              </Link>
+            )}
+          </div>
+        )}
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">{children}</main>
       </div>
     </div>

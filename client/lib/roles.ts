@@ -19,6 +19,12 @@ export function homeRouteForRole(role?: Role | null) {
   return '/employee/today';
 }
 
+export function profileRouteForRole(role?: Role | null) {
+  if (role === 'super_admin' || role === 'admin') return '/admin/profile';
+  if (role === 'b2b_agent') return '/b2b/profile';
+  return '/employee/profile';
+}
+
 export function formatRoleLabel(role?: string | null) {
   if (!role) return '';
   return role
