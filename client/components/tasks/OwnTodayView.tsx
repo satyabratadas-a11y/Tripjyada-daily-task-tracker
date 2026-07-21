@@ -224,8 +224,8 @@ function TaskCard({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task)
 
 /**
  * Shows the current user's own tasks for today, with a form to add one. Used by employees and
- * (via /api/tasks/today?scope=own) by admins logging their own daily task rather than the
- * cross-employee oversight grid admins otherwise see at this same endpoint.
+ * (via /api/tasks/today/mine) by admins logging their own daily task rather than the
+ * cross-employee oversight grid admins otherwise see at /api/tasks/today.
  */
 export default function OwnTodayView() {
   const { user, refresh } = useAuth();
@@ -237,9 +237,9 @@ export default function OwnTodayView() {
     setLoading(true);
     setError('');
     try {
-      const data = await api.get<{ rows: TodayRow[] }>('/api/tasks/today?scope=own');
+      const data = await api.get<{ rows: TodayRow[] }>('/api/tasks/today/mine');
       // Never assume the first row belongs to the signed-in user. Older API deployments returned
-      // every employee row to admins even with scope=own, which made an admin see someone else's
+      // every employee row to admins even on this endpoint, which made an admin see someone else's
       // tasks here and then receive "You can only update your own task" when saving.
       const ownRow = data.rows.find((row) => String(row.employee.id) === String(user?.id));
       setTasks(ownRow?.tasks || []);
