@@ -6,10 +6,10 @@ import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { AdminStatusBadge, MemberStatusBadge, SourceBadge } from '@/components/StatusBadge';
 import SummaryBar from '@/components/SummaryBar';
-import type { Task } from '@/lib/types';
+import type { Role, Task } from '@/lib/types';
 
 interface TodayRow {
-  employee: { id: string; name: string; jobTitle: string };
+  employee: { id: string; name: string; jobTitle: string; role: Role };
   tasks: Task[];
 }
 
@@ -237,14 +237,18 @@ function EmployeeSection({
   const completed = row.tasks.filter((task) => task.adminStatus === 'completed').length;
   const pending = row.tasks.filter((task) => task.adminStatus === 'pending').length;
   const flagged = row.tasks.filter((task) => task.adminStatus === 'flagged').length;
-  const reviewHref = `/admin/employees/${row.employee.id}?month=${month}&year=${year}&date=${date}`;
+  const reviewHref = `/admin/employees/${row.employee.id}?month=${month}&year=${year}&date=${date}&targetRole=${row.employee.role}`;
 
   return (
     <div className="card h-full">
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xl font-semibold text-brand">{row.employee.name}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{row.employee.jobTitle || 'Employee'}</p>
+          <p className="text-sm capitalize text-gray-500 dark:text-gray-400">
+            {row.employee.role === 'employee'
+              ? row.employee.jobTitle || 'Employee'
+              : `${row.employee.role.replaceAll('_', ' ')}${row.employee.jobTitle ? ` · ${row.employee.jobTitle}` : ''}`}
+          </p>
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400 lg:text-right">
           <p>{row.tasks.length} task(s)</p>
@@ -289,9 +293,11 @@ function EmployeeSection({
         </div>
       </div>
 
-      <div className="mt-4">
-        <AssignForm employeeId={row.employee.id} date={date} onAssigned={onAssigned} />
-      </div>
+      {row.employee.role === 'employee' && (
+        <div className="mt-4">
+          <AssignForm employeeId={row.employee.id} date={date} onAssigned={onAssigned} />
+        </div>
+      )}
     </div>
   );
 }

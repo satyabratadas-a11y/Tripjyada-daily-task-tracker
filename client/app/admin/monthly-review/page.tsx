@@ -65,7 +65,7 @@ export default function MonthlyReviewPage() {
           <div>
             <h1 className="text-lg font-semibold">Monthly Review</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Every employee&apos;s month at a glance — flagged and in-progress work included, not just what&apos;s Done.
+              Every task owner&apos;s month at a glance — flagged and in-progress work included, not just what&apos;s Done.
             </p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -102,7 +102,7 @@ export default function MonthlyReviewPage() {
             <table className="tracker w-full">
               <thead>
                 <tr>
-                  <th>Employee</th>
+                  <th>Team member</th>
                   <th>Role</th>
                   <th>Assigned</th>
                   <th>Completed</th>
@@ -115,8 +115,12 @@ export default function MonthlyReviewPage() {
               <tbody>
                 {filteredRows.map((row) => (
                   <tr key={row.employee.id}>
-                    <td data-label="Employee">{row.employee.name}</td>
-                    <td data-label="Role">{row.employee.jobTitle}</td>
+                    <td data-label="Team member">{row.employee.name}</td>
+                    <td data-label="Role">
+                      {row.employee.role === 'employee'
+                        ? row.employee.jobTitle || 'Employee'
+                        : `${row.employee.role.replaceAll('_', ' ')}${row.employee.jobTitle ? ` · ${row.employee.jobTitle}` : ''}`}
+                    </td>
                     <td data-label="Assigned">{row.assignedDays}</td>
                     <td data-label="Completed">{row.completed}</td>
                     <td data-label="On progress">{row.onProgress}</td>
@@ -126,7 +130,7 @@ export default function MonthlyReviewPage() {
                     </td>
                     <td data-label="Actions">
                       <Link
-                        href={`/admin/employees/${row.employee.id}?month=${month}&year=${year}&targetRole=employee`}
+                        href={`/admin/employees/${row.employee.id}?month=${month}&year=${year}&targetRole=${row.employee.role}`}
                         className="btn-secondary"
                       >
                         View month
