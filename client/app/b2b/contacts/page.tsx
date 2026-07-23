@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError, downloadUrl } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { splitContactValues, formatFullAddress } from '@/lib/contactFormat';
+import { cloudinaryThumb, cloudinaryOptimized } from '@/lib/cloudinaryUrl';
 import type { Contact } from '@/lib/types';
 
 function agentName(c: Contact) {
@@ -270,14 +271,14 @@ export default function MyContactsPage() {
                     <p className="mb-2 text-xs text-gray-500">Click a photo to view full size</p>
                     <div className="flex gap-3">
                       <img
-                        src={selected.imageUrl}
+                        src={cloudinaryThumb(selected.imageUrl, 112)}
                         alt={selected.name || 'Business card'}
                         className="h-28 w-28 cursor-pointer rounded-lg border border-gray-200 object-cover transition hover:opacity-80 dark:border-white/10"
                         onClick={() => setFullImage(selected.imageUrl)}
                       />
                       {selected.backImageUrl && (
                         <img
-                          src={selected.backImageUrl}
+                          src={cloudinaryThumb(selected.backImageUrl, 112)}
                           alt="Back of business card"
                           className="h-28 w-28 cursor-pointer rounded-lg border border-gray-200 object-cover transition hover:opacity-80 dark:border-white/10"
                           onClick={() => setFullImage(selected.backImageUrl)}
@@ -363,7 +364,7 @@ export default function MyContactsPage() {
           >
             <i className="fa-solid fa-xmark text-2xl" />
           </button>
-          <img src={fullImage} alt="Business card, full size" className="max-h-full max-w-full rounded-lg object-contain" />
+          <img src={cloudinaryOptimized(fullImage)} alt="Business card, full size" className="max-h-full max-w-full rounded-lg object-contain" />
         </div>
       )}
     </div>

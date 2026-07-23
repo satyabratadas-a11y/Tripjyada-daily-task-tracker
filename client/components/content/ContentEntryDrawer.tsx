@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, ApiError, API_URL } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { isAdminLike } from '@/lib/roles';
+import { cloudinaryThumb } from '@/lib/cloudinaryUrl';
 import EntryFormFields, { type EntryFormValue } from './EntryFormFields';
 import { ContentStatusBadge, ApprovalStatusBadge } from './ContentBadges';
 import type { Campaign, ClientMember, ClientRole, ContentComment, ContentEntry, ContentPillar } from '@/lib/content-types';
@@ -314,7 +315,7 @@ export default function ContentEntryDrawer({
                       <div key={a.id} className="group relative overflow-hidden rounded-md border border-gray-200 dark:border-white/10">
                         {a.resourceType === 'image' ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={a.url} alt={a.name} className="h-20 w-full object-cover" />
+                          <img src={cloudinaryThumb(a.url, 80)} alt={a.name} className="h-20 w-full object-cover" />
                         ) : (
                           <a
                             href={a.url}

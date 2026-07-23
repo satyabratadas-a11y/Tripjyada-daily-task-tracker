@@ -1,3 +1,5 @@
+import { cloudinaryThumb } from '@/lib/cloudinaryUrl';
+
 function initialsFor(name: string) {
   const initials = name
     .trim()
@@ -25,7 +27,7 @@ export default function Avatar({
     // eslint-disable-next-line @next/next/no-img-element
     return (
       <img
-        src={avatarUrl}
+        src={cloudinaryThumb(avatarUrl, size)}
         alt={name}
         width={size}
         height={size}

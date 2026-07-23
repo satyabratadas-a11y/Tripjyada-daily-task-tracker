@@ -258,9 +258,15 @@ export default function OwnTodayView() {
   }
 
   useEffect(() => {
-    load();
+    // `load` closes over `user` from this render, and AuthContext resolves `/api/auth/me`
+    // asynchronously — firing on every mount regardless of `user` raced the two requests: on a
+    // slower connection, the tasks fetch could resolve before `user` was populated, so the
+    // "does this row belong to me" check below compared against `undefined` and always missed,
+    // showing the "task row was not returned" error for a user whose data was actually fine.
+    // Waiting for `user` guarantees the closure has the real id by the time rows come back.
+    if (user) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.id]);
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const stats = useMemo(
