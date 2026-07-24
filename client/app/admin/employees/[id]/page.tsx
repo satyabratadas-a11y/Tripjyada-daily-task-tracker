@@ -301,6 +301,7 @@ export default function EmployeeMonthlyLogPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkNotice, setBulkNotice] = useState('');
   const [trendPoints, setTrendPoints] = useState<TrendPoint[] | null>(null);
+  const [trendExpanded, setTrendExpanded] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -415,10 +416,21 @@ export default function EmployeeMonthlyLogPage() {
 
       {trendPoints && (
         <div className="card mb-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
-            Progress trend — last {trendPoints.length} months
-          </h2>
-          <TrendChart points={trendPoints} />
+          <button
+            type="button"
+            onClick={() => setTrendExpanded((v) => !v)}
+            className="flex w-full items-center gap-2.5 text-left"
+          >
+            <i className={`fa-solid fa-chevron-${trendExpanded ? 'down' : 'right'} shrink-0 text-xs text-gray-400`} />
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+              Progress trend — last {trendPoints.length} months
+            </h2>
+          </button>
+          {trendExpanded && (
+            <div className="mt-3">
+              <TrendChart points={trendPoints} />
+            </div>
+          )}
         </div>
       )}
 
