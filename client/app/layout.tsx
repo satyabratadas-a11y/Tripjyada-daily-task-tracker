@@ -4,8 +4,22 @@ import './globals.css';
 import { AuthProvider } from '@/lib/AuthContext';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tms.tripjyada.in'),
   title: 'Team Task Tracker',
   description: 'Daily task tracking, verification and monthly reporting for the team',
+  openGraph: {
+    title: 'Team Task Tracker',
+    description: 'Daily task tracking, verification and monthly reporting for the team',
+    siteName: 'Team Task Tracker',
+    images: [{ url: '/logo.webp', width: 1024, height: 1024, alt: 'Team Task Tracker' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Team Task Tracker',
+    description: 'Daily task tracking, verification and monthly reporting for the team',
+    images: ['/logo.webp'],
+  },
 };
 
 // Every page here is either auth-gated or auth-dependent, so there's no benefit to Next's static
