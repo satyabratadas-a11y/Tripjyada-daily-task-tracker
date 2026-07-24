@@ -226,6 +226,9 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<UserStatus | 'all'>('all');
 
   async function load() {
     setLoading(true);
@@ -266,7 +269,19 @@ export default function AdminUsersPage() {
   }
 
   const pending = users.filter((u) => u.status === 'pending');
-  const others = users.filter((u) => u.status !== 'pending');
+  const query = search.trim().toLowerCase();
+  const others = users
+    .filter((u) => u.status !== 'pending')
+    .filter((u) => roleFilter === 'all' || u.role === roleFilter)
+    .filter((u) => statusFilter === 'all' || u.status === statusFilter)
+    .filter(
+      (u) =>
+        !query ||
+        u.name.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query) ||
+        u.employeeCode.toLowerCase().includes(query)
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="space-y-8">
@@ -322,6 +337,39 @@ export default function AdminUsersPage() {
 
       <div>
         <h2 className="mb-4 text-lg font-semibold">All users</h2>
+        <div className="mb-4 flex flex-wrap gap-3">
+          <input
+            className="input max-w-xs flex-1"
+            type="search"
+            placeholder="Search name, email, or employee ID…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className="input w-auto"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value as Role | 'all')}
+          >
+            <option value="all">All roles</option>
+            {ROLE_OPTIONS.map((role) => (
+              <option key={role} value={role}>
+                {ROLE_LABEL_OVERRIDES[role] ?? formatRoleLabel(role)}
+              </option>
+            ))}
+          </select>
+          <select
+            className="input w-auto"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as UserStatus | 'all')}
+          >
+            <option value="all">All statuses</option>
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {formatRoleLabel(status)}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
           <table className="tracker w-full">
             <thead>
@@ -336,9 +384,17 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {others.map((activeUser) => (
-                <ActiveRow key={activeUser.id} user={activeUser} currentUserId={user?.id} onDone={load} />
-              ))}
+              {others.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center text-sm text-gray-500 dark:text-gray-400">
+                    No users match your search.
+                  </td>
+                </tr>
+              ) : (
+                others.map((activeUser) => (
+                  <ActiveRow key={activeUser.id} user={activeUser} currentUserId={user?.id} onDone={load} />
+                ))
+              )}
             </tbody>
           </table>
         </div>
