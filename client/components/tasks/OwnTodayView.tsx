@@ -293,7 +293,8 @@ export default function OwnTodayView() {
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         Your update is `On Progress`, `Done`, or `Not Done`. Progress is calculated from your reviewer&apos;s verified status.
         Any task still `On Progress` — including one you reopen from an older day in your monthly log — stays listed here.
-        Marking it Done or Not Done moves it off this list into your Monthly Log.
+        Marking it Done or Not Done keeps it listed here until your admin or super admin reviews it; it only moves to
+        your Monthly Log once they&apos;ve verified it.
       </p>
 
       {!loading && <SummaryBar stats={stats} />}
