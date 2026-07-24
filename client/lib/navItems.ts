@@ -9,6 +9,7 @@ export interface NavItem {
 
 const BASE_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/today', label: "Today's Tasks", icon: 'fa-solid fa-list-check' },
+  { href: '/admin/search', label: 'Task Search', icon: 'fa-solid fa-magnifying-glass' },
   { href: '/admin/my-today', label: 'My Today', icon: 'fa-solid fa-user-clock' },
   { href: '/admin/my-log', label: 'My Monthly Log', icon: 'fa-solid fa-calendar-days' },
   { href: '/admin/dashboard', label: 'Dashboard', icon: 'fa-solid fa-gauge-high' },

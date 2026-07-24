@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { AdminStatusBadge, MemberStatusBadge, DayTypeCell, SourceBadge } from '@/components/StatusBadge';
 import MonthCalendar from '@/components/MonthCalendar';
 import SummaryBar from '@/components/SummaryBar';
+import TrendChart, { type TrendPoint } from '@/components/TrendChart';
 import type { Task } from '@/lib/types';
 
 const ADMIN_STATUS_OPTIONS = ['pending', 'completed', 'on_progress', 'incomplete', 'flagged'];
@@ -66,7 +67,19 @@ function AddDayForm({ employeeId, defaultDate, onAdded }: { employeeId: string; 
   );
 }
 
-function EditableRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task) => void; onDeleted: (id: string) => void }) {
+function EditableRow({
+  task,
+  onSaved,
+  onDeleted,
+  selected,
+  onToggleSelected,
+}: {
+  task: Task;
+  onSaved: (t: Task) => void;
+  onDeleted: (id: string) => void;
+  selected: boolean;
+  onToggleSelected: (id: string) => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [assignedTask, setAssignedTask] = useState(task.assignedTask);
   const [brief, setBrief] = useState(task.brief);
@@ -124,6 +137,14 @@ function EditableRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Ta
 
     return (
       <tr className={rowClass}>
+        <td data-label="">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelected(task._id)}
+            aria-label={`Select ${task.assignedTask || 'task'} on ${dateLabel}`}
+          />
+        </td>
         <td data-label="Date">{dateLabel}</td>
         <td data-label="Day type">
           <DayTypeCell value={task.dayType} />
@@ -163,7 +184,7 @@ function EditableRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Ta
 
   return (
     <tr>
-      <td colSpan={10}>
+      <td colSpan={11}>
         <div className="flex flex-wrap items-end gap-2 py-2">
           <input className="input w-full sm:flex-1" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} placeholder="Assigned task" />
           <input className="input w-full sm:flex-1" value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Brief" />
@@ -197,6 +218,70 @@ function EditableRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Ta
   );
 }
 
+function BulkReviewBar({
+  selectedIds,
+  onApplied,
+  onClear,
+}: {
+  selectedIds: string[];
+  onApplied: (updated: Task[], skippedCount: number) => void;
+  onClear: () => void;
+}) {
+  const [adminStatus, setAdminStatus] = useState<Task['adminStatus']>('completed');
+  const [reviewerNotes, setReviewerNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleApply() {
+    setSaving(true);
+    setError('');
+    try {
+      const body: Record<string, unknown> = { taskIds: selectedIds, adminStatus };
+      if (reviewerNotes) body.reviewerNotes = reviewerNotes;
+      const { updated, skipped } = await api.patch<{ updated: Task[]; skipped: { id: string; reason: string }[] }>(
+        '/api/tasks/bulk/admin',
+        body
+      );
+      onApplied(updated, skipped.length);
+      setReviewerNotes('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update selected tasks');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-brand/30 bg-brand/5 p-3">
+      <p className="mr-2 text-sm font-medium">{selectedIds.length} selected</p>
+      <select
+        className="input w-full sm:w-auto"
+        value={adminStatus}
+        onChange={(e) => setAdminStatus(e.target.value as Task['adminStatus'])}
+      >
+        {ADMIN_STATUS_OPTIONS.map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
+      </select>
+      <input
+        className="input w-full sm:flex-1"
+        placeholder="Reviewer notes (optional, applied to all selected)"
+        value={reviewerNotes}
+        onChange={(e) => setReviewerNotes(e.target.value)}
+      />
+      <button className="btn-primary w-full sm:w-auto" disabled={saving} onClick={handleApply}>
+        {saving ? 'Applying…' : `Apply to ${selectedIds.length}`}
+      </button>
+      <button className="btn-secondary w-full sm:w-auto" onClick={onClear}>
+        Clear selection
+      </button>
+      {error && <p className="w-full text-xs text-status-flagged">{error}</p>}
+    </div>
+  );
+}
+
 export default function EmployeeMonthlyLogPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
@@ -210,17 +295,22 @@ export default function EmployeeMonthlyLogPage() {
   const { refresh } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [employee, setEmployee] = useState<{ name: string; jobTitle: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkNotice, setBulkNotice] = useState('');
+  const [trendPoints, setTrendPoints] = useState<TrendPoint[] | null>(null);
 
   async function load() {
     setLoading(true);
     setError('');
     try {
-      const data = await api.get<{ tasks: Task[] }>(
+      const data = await api.get<{ tasks: Task[]; employee?: { name: string; jobTitle: string } }>(
         `/api/tasks?employeeId=${params.id}&month=${month}&year=${year}`
       );
       setTasks(data.tasks);
+      if (data.employee) setEmployee(data.employee);
     } catch (err) {
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
         await refresh();
@@ -243,10 +333,43 @@ export default function EmployeeMonthlyLogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id, month, year, queryDate]);
 
+  useEffect(() => {
+    api
+      .get<{ points: TrendPoint[] }>(`/api/dashboard/trend?employeeId=${params.id}&months=6`)
+      .then((data) => setTrendPoints(data.points))
+      .catch(() => setTrendPoints(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
+
   const filteredTasks = useMemo(
     () => (selectedDate ? tasks.filter((t) => t.date.slice(0, 10) === selectedDate) : tasks),
     [tasks, selectedDate]
   );
+
+  // Selection is scoped to what's currently visible — switching month/day shouldn't carry a
+  // hidden selection along that the admin can no longer see or reason about.
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [selectedDate, month, year]);
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => (prev.length === filteredTasks.length ? [] : filteredTasks.map((t) => t._id)));
+  }
+
+  function handleBulkApplied(updated: Task[], skippedCount: number) {
+    const updatedById = new Map(updated.map((t) => [t._id, t]));
+    setTasks((prev) => prev.map((t) => updatedById.get(t._id) || t));
+    setSelectedIds([]);
+    setBulkNotice(
+      skippedCount > 0
+        ? `Updated ${updated.length} task(s); skipped ${skippedCount} you're not allowed to review.`
+        : `Updated ${updated.length} task(s).`
+    );
+  }
 
   const stats = useMemo(
     () => [
@@ -264,7 +387,9 @@ export default function EmployeeMonthlyLogPage() {
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-lg font-semibold">Task review</h1>
+        <h1 className="text-lg font-semibold">
+          Task review{employee ? ` — ${employee.name}'s Monthly Log` : ''}
+        </h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -287,6 +412,15 @@ export default function EmployeeMonthlyLogPage() {
       </p>
 
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
+
+      {trendPoints && (
+        <div className="card mb-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Progress trend — last {trendPoints.length} months
+          </h2>
+          <TrendChart points={trendPoints} />
+        </div>
+      )}
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <MonthCalendar month={month} year={year} tasks={tasks} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
@@ -313,6 +447,16 @@ export default function EmployeeMonthlyLogPage() {
         </div>
       )}
 
+      {bulkNotice && <p className="mb-4 text-sm text-status-completed">{bulkNotice}</p>}
+
+      {selectedIds.length > 0 && (
+        <BulkReviewBar
+          selectedIds={selectedIds}
+          onApplied={handleBulkApplied}
+          onClear={() => setSelectedIds([])}
+        />
+      )}
+
       {loading ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : filteredTasks.length === 0 ? (
@@ -322,6 +466,14 @@ export default function EmployeeMonthlyLogPage() {
           <table className="tracker w-full">
             <thead>
               <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === filteredTasks.length}
+                    onChange={toggleSelectAll}
+                    aria-label="Select all tasks in view"
+                  />
+                </th>
                 <th>Date</th>
                 <th>Day type</th>
                 <th>Source</th>
@@ -339,6 +491,8 @@ export default function EmployeeMonthlyLogPage() {
                 <EditableRow
                   key={t._id}
                   task={t}
+                  selected={selectedIds.includes(t._id)}
+                  onToggleSelected={toggleSelected}
                   onSaved={(updated) => setTasks((prev) => prev.map((x) => (x._id === updated._id ? updated : x)))}
                   onDeleted={(id) => setTasks((prev) => prev.filter((x) => x._id !== id))}
                 />
