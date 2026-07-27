@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
-import { AdminStatusBadge, DayTypeCell, SourceBadge } from '@/components/StatusBadge';
+import { AdminStatusBadge, MemberStatusBadge, DayTypeCell, SourceBadge } from '@/components/StatusBadge';
 import type { Task, Role } from '@/lib/types';
 
 interface SearchResult extends Omit<Task, 'employee'> {
@@ -12,11 +12,13 @@ interface SearchResult extends Omit<Task, 'employee'> {
 }
 
 const ADMIN_STATUS_OPTIONS = ['pending', 'completed', 'on_progress', 'incomplete', 'flagged'];
+const MEMBER_STATUS_OPTIONS = ['not_started', 'on_progress', 'done', 'not_done'];
 
 export default function AdminTaskSearchPage() {
   const { refresh } = useAuth();
   const [q, setQ] = useState('');
   const [adminStatus, setAdminStatus] = useState('');
+  const [memberStatus, setMemberStatus] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -31,6 +33,7 @@ export default function AdminTaskSearchPage() {
       const query = new URLSearchParams();
       if (q.trim()) query.set('q', q.trim());
       if (adminStatus) query.set('adminStatus', adminStatus);
+      if (memberStatus) query.set('memberStatus', memberStatus);
       if (from) query.set('from', from);
       if (to) query.set('to', to);
       const data = await api.get<{ tasks: SearchResult[] }>(`/api/tasks/search?${query.toString()}`);
@@ -45,7 +48,7 @@ export default function AdminTaskSearchPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, adminStatus, from, to, refresh]);
+  }, [q, adminStatus, memberStatus, from, to, refresh]);
 
   // An empty search (no keyword/status/date) still returns the most recent tasks across the
   // team, so landing on this page shows something useful right away.
@@ -62,6 +65,7 @@ export default function AdminTaskSearchPage() {
   function clearFilters() {
     setQ('');
     setAdminStatus('');
+    setMemberStatus('');
     setFrom('');
     setTo('');
   }
@@ -88,10 +92,21 @@ export default function AdminTaskSearchPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Verified status</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Admin verified status</label>
           <select className="input w-full sm:w-auto" value={adminStatus} onChange={(e) => setAdminStatus(e.target.value)}>
             <option value="">Any status</option>
             {ADMIN_STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">User status</label>
+          <select className="input w-full sm:w-auto" value={memberStatus} onChange={(e) => setMemberStatus(e.target.value)}>
+            <option value="">Any status</option>
+            {MEMBER_STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -109,7 +124,7 @@ export default function AdminTaskSearchPage() {
         <button type="submit" className="btn-primary w-full sm:w-auto" disabled={loading}>
           {loading ? 'Searching…' : 'Search'}
         </button>
-        {(q || adminStatus || from || to) && (
+        {(q || adminStatus || memberStatus || from || to) && (
           <button type="button" className="btn-secondary w-full sm:w-auto" onClick={clearFilters}>
             Clear
           </button>
@@ -134,7 +149,8 @@ export default function AdminTaskSearchPage() {
                 <th>Day type</th>
                 <th>Source</th>
                 <th>Assigned task</th>
-                <th>Verified status</th>
+                <th>User status</th>
+                <th>Admin verified status</th>
                 <th></th>
               </tr>
             </thead>
@@ -154,7 +170,10 @@ export default function AdminTaskSearchPage() {
                       <SourceBadge value={t.createdBy} />
                     </td>
                     <td data-label="Assigned task">{t.assignedTask || <span className="text-gray-400">—</span>}</td>
-                    <td data-label="Verified status">
+                    <td data-label="User status">
+                      <MemberStatusBadge value={t.memberStatus} />
+                    </td>
+                    <td data-label="Admin verified status">
                       <AdminStatusBadge value={t.adminStatus} />
                     </td>
                     <td data-label="Actions">
