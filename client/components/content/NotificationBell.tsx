@@ -25,12 +25,15 @@ const TYPE_ICONS: Record<string, string> = {
   comment: 'fa-solid fa-comment',
   due_soon: 'fa-solid fa-clock',
   signup_pending: 'fa-solid fa-user-plus',
+  project_overdue: 'fa-solid fa-triangle-exclamation',
 };
 
-// A new-signup alert only a super admin can act on gets its own color so it stands out from the
-// rest of the feed at a glance, instead of blending in with the usual brand-colored icons.
+// A new-signup alert only a super admin can act on, and an overdue project, each get their own
+// color so they stand out from the rest of the feed at a glance, instead of blending in with the
+// usual brand-colored icons.
 const TYPE_ICON_COLORS: Record<string, string> = {
   signup_pending: 'text-status-completed',
+  project_overdue: 'text-status-flagged',
 };
 
 function isEphemeralNotification(id: string) {
@@ -138,9 +141,11 @@ export default function NotificationBell() {
                   className={`flex w-full items-start gap-2.5 border-b border-gray-50 px-3 py-2.5 text-left text-sm transition last:border-b-0 hover:bg-gray-50 dark:border-white/5 dark:hover:bg-white/5 ${
                     n.type === 'signup_pending'
                       ? 'bg-status-completed/10 dark:bg-status-completed/15'
-                      : !n.read
-                        ? 'bg-brand/5 dark:bg-brand/10'
-                        : ''
+                      : n.type === 'project_overdue'
+                        ? 'bg-status-flagged/10 dark:bg-status-flagged/15'
+                        : !n.read
+                          ? 'bg-brand/5 dark:bg-brand/10'
+                          : ''
                   }`}
                 >
                   <i

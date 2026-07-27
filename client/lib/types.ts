@@ -32,6 +32,24 @@ export interface Task {
   reviewerNotes: string;
   proofLink: string;
   memberStatus: MemberStatus;
+  project?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProjectStatus = 'active' | 'completed';
+
+export interface Project {
+  _id: string;
+  employee: string;
+  title: string;
+  brief: string;
+  startDate: string;
+  endDate: string;
+  createdBy: CreatedBy;
+  status: ProjectStatus;
+  reviewerNotes: string;
+  overdue: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,7 +74,7 @@ export interface AuditLogEntry {
   id: string;
   actor: { id: string; name: string; role: Role };
   action: string;
-  targetType: 'user' | 'task' | 'contact';
+  targetType: 'user' | 'task' | 'contact' | 'project';
   targetId: string;
   targetLabel: string;
   summary: string;

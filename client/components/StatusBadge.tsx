@@ -68,6 +68,38 @@ export function DayTypeCell({ value }: { value: string }) {
   return <span className="inline-flex items-center whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">Working</span>;
 }
 
+const PROJECT_STATUS_STYLES: Record<string, string> = {
+  active:
+    'border-status-progress bg-status-progress/20 text-amber-800 dark:border-status-progress/50 dark:bg-status-progress/20 dark:text-amber-300',
+  completed:
+    'border-status-completed bg-status-completed/15 text-green-800 dark:border-status-completed/50 dark:bg-status-completed/20 dark:text-green-300',
+};
+
+const PROJECT_STATUS_LABELS: Record<string, string> = {
+  active: 'Active',
+  completed: 'Completed',
+};
+
+export function ProjectStatusBadge({ value }: { value: string }) {
+  return (
+    <span
+      className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium leading-none sm:text-xs ${
+        PROJECT_STATUS_STYLES[value] || PROJECT_STATUS_STYLES.active
+      }`}
+    >
+      {PROJECT_STATUS_LABELS[value] || value}
+    </span>
+  );
+}
+
+export function OverdueBadge() {
+  return (
+    <span className="inline-flex items-center whitespace-nowrap rounded-full border border-status-flagged bg-status-flagged/15 px-2.5 py-1 text-[11px] font-medium leading-none text-red-800 dark:border-status-flagged/50 dark:bg-status-flagged/20 dark:text-red-300 sm:text-xs">
+      Overdue
+    </span>
+  );
+}
+
 export function SourceBadge({ value }: { value: 'admin' | 'employee' }) {
   return value === 'employee' ? (
     <span className="inline-flex items-center whitespace-nowrap rounded-full border border-brand/30 bg-brand/5 px-2.5 py-1 text-[11px] leading-none text-brand dark:border-brand-light/30 dark:bg-brand/10 dark:text-brand-light">

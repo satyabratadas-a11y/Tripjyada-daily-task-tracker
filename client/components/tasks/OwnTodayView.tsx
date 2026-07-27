@@ -306,7 +306,7 @@ export default function OwnTodayView() {
       ) : tasks.length === 0 ? (
         <div className="card text-sm text-gray-500 dark:text-gray-400">No tasks yet for today — add your own above.</div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
           {tasks.map((t) => (
             <TaskCard
               key={t._id}
