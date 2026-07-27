@@ -50,6 +50,9 @@ function AddDayForm({ employeeId, defaultDate, onAdded }: { employeeId: string; 
       <div className="w-full sm:w-auto">
         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Date</label>
         <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+        <p className="mt-1 max-w-[10rem] text-[11px] text-gray-400 dark:text-gray-500">
+          Pick any date — use this to backfill a day they forgot.
+        </p>
       </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Assigned task</label>
