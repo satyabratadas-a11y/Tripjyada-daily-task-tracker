@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
+import { isAdminLike } from '@/lib/roles';
 import { ProjectStatusBadge, OverdueBadge, DayTypeCell, SourceBadge, MemberStatusBadge, AdminStatusBadge } from '@/components/StatusBadge';
 import MonthCalendar from '@/components/MonthCalendar';
 import SummaryBar from '@/components/SummaryBar';
@@ -93,12 +94,14 @@ function AddEntryForm({
 
 export default function ProjectDetailView() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { user, refresh } = useAuth();
   const [project, setProject] = useState<ProjectWithEmployee | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -150,6 +153,24 @@ export default function ProjectDetailView() {
 
   const isOwner = user?.id === project.employee.id;
   const backHref = isOwner && user?.role === 'employee' ? '/employee/projects' : '/admin/projects';
+  // Mirrors the server's deleteProject rule: an owner may only delete a project they started
+  // themselves (not one an admin assigned to them); a reviewing admin can always attempt it and
+  // the server enforces the rank check (plain admin vs. an admin/super-admin-owned project).
+  const canDelete = isOwner ? project.createdBy === 'employee' : isAdminLike(user?.role);
+
+  async function handleDelete() {
+    if (!project) return;
+    if (!window.confirm(`Delete "${project.title}"? This cannot be undone.`)) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await api.delete(`/api/projects/${project._id}`);
+      router.push(backHref);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to delete project');
+      setDeleting(false);
+    }
+  }
 
   return (
     <div>
@@ -170,9 +191,15 @@ export default function ProjectDetailView() {
           {project.overdue && <OverdueBadge />}
           <ProjectStatusBadge value={project.status} />
           <SourceBadge value={project.createdBy} />
+          {canDelete && (
+            <button className="btn-secondary text-status-flagged" disabled={deleting} onClick={handleDelete}>
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+          )}
         </div>
       </div>
 
+      {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
       {project.brief && <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">{project.brief}</p>}
       {project.reviewerNotes && (
         <p className="mb-4 rounded-lg border border-status-flagged/30 bg-status-flagged/5 p-3 text-sm text-gray-700 dark:text-gray-200">

@@ -129,10 +129,21 @@ function NewProjectForm({ onAdded }: { onAdded: (project: Project) => void }) {
   );
 }
 
-function ProjectQuickRow({ project, projectsBase, onLogged }: { project: Project; projectsBase: string; onLogged: () => void }) {
+function ProjectQuickRow({
+  project,
+  projectsBase,
+  onLogged,
+  onDeleted,
+}: {
+  project: Project;
+  projectsBase: string;
+  onLogged: () => void;
+  onDeleted: (id: string) => void;
+}) {
   const [logging, setLogging] = useState(false);
   const [assignedTask, setAssignedTask] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   async function handleLog() {
@@ -155,6 +166,19 @@ function ProjectQuickRow({ project, projectsBase, onLogged }: { project: Project
     }
   }
 
+  async function handleDelete() {
+    if (!window.confirm(`Delete "${project.title}"? This cannot be undone.`)) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await api.delete(`/api/projects/${project._id}`);
+      onDeleted(project._id);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to delete project');
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="rounded-lg border border-gray-200 p-3 dark:border-white/10">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -168,6 +192,11 @@ function ProjectQuickRow({ project, projectsBase, onLogged }: { project: Project
           <Link href={`${projectsBase}/${project._id}`} className="btn-secondary text-xs">
             Open
           </Link>
+          {project.createdBy === 'employee' && (
+            <button className="btn-secondary text-xs text-status-flagged" disabled={deleting} onClick={handleDelete}>
+              {deleting ? '…' : 'Delete'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -256,6 +285,7 @@ function TodayProjectsPanel({ projectsBase, onLoggedEntry }: { projectsBase: str
                 onLoggedEntry();
                 load();
               }}
+              onDeleted={(id) => setProjects((prev) => prev.filter((x) => x._id !== id))}
             />
           ))}
         </div>
