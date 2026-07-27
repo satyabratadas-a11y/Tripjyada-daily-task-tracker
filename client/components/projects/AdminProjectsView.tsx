@@ -61,9 +61,9 @@ function AssignProjectForm({ employees, onAssigned }: { employees: EmployeeOptio
   }
 
   return (
-    <div className="card mb-6 space-y-3">
-      <div className="flex flex-wrap gap-3">
-        <div className="w-full sm:min-w-[200px]">
+    <div className="card mb-6">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-full sm:min-w-[180px]">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Employee</label>
           <select className="input" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
             <option value="" disabled>
@@ -77,27 +77,22 @@ function AssignProjectForm({ employees, onAssigned }: { employees: EmployeeOptio
             ))}
           </select>
         </div>
-        <div className="w-full sm:min-w-[220px] sm:flex-1">
+        <div className="w-full sm:min-w-[160px] sm:flex-1">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Title</label>
           <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
-        <div className="w-full sm:min-w-[220px] sm:flex-1">
+        <div className="w-full sm:min-w-[160px] sm:flex-1">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief (optional)</label>
           <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
         </div>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        <div>
+        <div className="w-full sm:w-auto">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Start date</label>
           <input type="date" className="input" value={startDate} max={endDate} onChange={(e) => setStartDate(e.target.value)} />
         </div>
-        <div>
+        <div className="w-full sm:w-auto">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">End date</label>
           <input type="date" className="input" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
         </div>
-      </div>
-      {error && <p className="text-xs text-status-flagged">{error}</p>}
-      <div className="flex flex-wrap gap-2">
         <button className="btn-primary w-full sm:w-auto" disabled={saving || !employeeId || !title.trim()} onClick={handleAssign}>
           {saving ? 'Assigning…' : 'Assign'}
         </button>
@@ -105,15 +100,25 @@ function AssignProjectForm({ employees, onAssigned }: { employees: EmployeeOptio
           Cancel
         </button>
       </div>
+      {error && <p className="mt-2 text-xs text-status-flagged">{error}</p>}
     </div>
   );
 }
 
-function ProjectReviewCard({ project, onSaved }: { project: ReviewProject; onSaved: (p: ReviewProject) => void }) {
+function ProjectReviewCard({
+  project,
+  onSaved,
+  onDeleted,
+}: {
+  project: ReviewProject;
+  onSaved: (p: ReviewProject) => void;
+  onDeleted: (id: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [status, setStatus] = useState<ProjectStatus>(project.status);
   const [reviewerNotes, setReviewerNotes] = useState(project.reviewerNotes);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   const dirty = status !== project.status || reviewerNotes !== project.reviewerNotes;
@@ -131,6 +136,20 @@ function ProjectReviewCard({ project, onSaved }: { project: ReviewProject; onSav
       setError(err instanceof ApiError ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Delete "${project.title || 'this project'}"? This cannot be undone.`)) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await api.delete(`/api/projects/${project._id}`);
+      onDeleted(project._id);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to delete');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -189,6 +208,9 @@ function ProjectReviewCard({ project, onSaved }: { project: ReviewProject; onSav
           {error && <p className="mt-2 text-xs text-status-flagged">{error}</p>}
 
           <div className="mt-3 flex flex-wrap justify-end gap-2">
+            <button className="btn-secondary w-full text-status-flagged sm:w-auto" disabled={deleting} onClick={handleDelete}>
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
             <Link href={`/admin/projects/${project._id}`} className="btn-secondary w-full sm:w-auto">
               Open
             </Link>
@@ -274,6 +296,10 @@ export default function AdminProjectsView() {
     setProjects((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
   }
 
+  function handleDeleted(id: string) {
+    setProjects((prev) => prev.filter((p) => p._id !== id));
+  }
+
   return (
     <div className="mx-auto w-full max-w-[1200px]">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -316,7 +342,7 @@ export default function AdminProjectsView() {
       ) : (
         <div className="space-y-3">
           {filteredProjects.map((p) => (
-            <ProjectReviewCard key={p._id} project={p} onSaved={handleSaved} />
+            <ProjectReviewCard key={p._id} project={p} onSaved={handleSaved} onDeleted={handleDeleted} />
           ))}
         </div>
       )}

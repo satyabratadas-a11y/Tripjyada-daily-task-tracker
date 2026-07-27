@@ -59,29 +59,24 @@ function AddProjectForm({ onAdded }: { onAdded: (project: Project) => void }) {
   }
 
   return (
-    <div className="card space-y-3">
-      <div className="flex flex-wrap gap-3">
-        <div className="w-full sm:min-w-[220px] sm:flex-1">
+    <div className="card">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-full sm:min-w-[180px] sm:flex-1">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Title</label>
           <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
         </div>
-        <div className="w-full sm:min-w-[220px] sm:flex-1">
+        <div className="w-full sm:min-w-[180px] sm:flex-1">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief (optional)</label>
           <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
         </div>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        <div>
+        <div className="w-full sm:w-auto">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Start date</label>
           <input type="date" className="input" value={startDate} max={endDate} onChange={(e) => setStartDate(e.target.value)} />
         </div>
-        <div>
+        <div className="w-full sm:w-auto">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">End date</label>
           <input type="date" className="input" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
         </div>
-      </div>
-      {error && <p className="text-xs text-status-flagged">{error}</p>}
-      <div className="flex flex-wrap gap-2">
         <button className="btn-primary w-full sm:w-auto" disabled={saving || !title.trim()} onClick={handleAdd}>
           {saving ? 'Adding…' : 'Add project'}
         </button>
@@ -89,6 +84,7 @@ function AddProjectForm({ onAdded }: { onAdded: (project: Project) => void }) {
           Cancel
         </button>
       </div>
+      {error && <p className="mt-2 text-xs text-status-flagged">{error}</p>}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, downloadUrl } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import RoleGuard from '@/components/RoleGuard';
 import type { DashboardRow } from '@/lib/types';
@@ -77,6 +77,12 @@ export default function MonthlyReviewPage() {
               ))}
             </select>
             <input type="number" className="input w-full sm:w-24" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+            <a
+              className="btn-primary w-full sm:w-auto"
+              href={downloadUrl(`/api/reports/monthly/download?month=${month}&year=${year}`)}
+            >
+              <i className="fa-solid fa-file-excel" /> Download report (.xlsx)
+            </a>
           </div>
         </div>
 
