@@ -25,9 +25,17 @@ function sortTasksByDate(tasks: Task[]) {
   });
 }
 
-// Self-adding is always for today, wherever this form is opened from — the calendar's selected
-// date only filters which day the table below is showing, it never sets where a new task lands.
-function AddTaskForm({ onAdded }: { onAdded: (task: Task) => void }) {
+function AddTaskForm({
+  date,
+  label,
+  hint,
+  onAdded,
+}: {
+  date: string;
+  label: string;
+  hint?: string;
+  onAdded: (task: Task) => void;
+}) {
   const [assignedTask, setAssignedTask] = useState('');
   const [brief, setBrief] = useState('');
   const [saving, setSaving] = useState(false);
@@ -37,9 +45,8 @@ function AddTaskForm({ onAdded }: { onAdded: (task: Task) => void }) {
     setSaving(true);
     setError('');
     try {
-      const today = new Date().toISOString().slice(0, 10);
       const { task } = await api.post<{ task: Task }>('/api/tasks/self', {
-        date: today,
+        date,
         assignedTask,
         brief,
         memberStatus: 'on_progress',
@@ -57,8 +64,9 @@ function AddTaskForm({ onAdded }: { onAdded: (task: Task) => void }) {
   return (
     <div className="card mb-6 flex flex-wrap items-end gap-3">
       <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Task for today</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
         <input className="input" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
+        {hint && <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{hint}</p>}
       </div>
       <div className="w-full sm:min-w-[180px] sm:flex-1">
         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief (optional)</label>
@@ -265,6 +273,7 @@ export default function OwnLogView() {
   );
 
   const flaggedTasks = filteredTasks.filter((t) => t.adminStatus === 'flagged');
+  const todayKey = now.toISOString().slice(0, 10);
 
   function handleTaskAdded(task: Task) {
     const taskDateKey = task.date.slice(0, 10);
@@ -307,7 +316,16 @@ export default function OwnLogView() {
         <MonthCalendar month={month} year={year} tasks={tasks} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <div className="min-w-0">
           <SummaryBar stats={stats} />
-          <AddTaskForm onAdded={handleTaskAdded} />
+          <AddTaskForm date={todayKey} label="Task for today" onAdded={handleTaskAdded} />
+          {selectedDate && (
+            <AddTaskForm
+              key={selectedDate}
+              date={selectedDate}
+              label={`Task for ${formatTaskDate(selectedDate)}`}
+              hint={selectedDate !== todayKey ? 'Backfilling a day you forgot to log.' : undefined}
+              onAdded={handleTaskAdded}
+            />
+          )}
         </div>
       </div>
 

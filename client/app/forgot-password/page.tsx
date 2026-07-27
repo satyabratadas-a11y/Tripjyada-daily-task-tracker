@@ -104,6 +104,9 @@ export default function ForgotPasswordPage() {
             autoComplete="new-password"
             className={passwordFieldClass}
           />
+          {newPassword.length > 0 && newPassword.length < 8 && (
+            <p className="-mt-2 mb-3 text-xs text-red-600">Password must be at least 8 characters.</p>
+          )}
           {confirmPassword.length > 0 && confirmPassword !== newPassword && (
             <p className="-mt-2 mb-3 text-xs text-red-600">Passwords do not match.</p>
           )}
