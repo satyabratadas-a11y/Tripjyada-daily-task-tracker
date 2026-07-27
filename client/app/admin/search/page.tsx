@@ -69,7 +69,7 @@ export default function AdminTaskSearchPage() {
   return (
     <div className="mx-auto w-full max-w-[1200px]">
       <div className="mb-4">
-        <h1 className="text-lg font-semibold">Task Search</h1>
+        <h1 className="page-title">Task Search</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Search across every visible employee&apos;s tasks by keyword, status, or date — not just one person&apos;s
           monthly log.

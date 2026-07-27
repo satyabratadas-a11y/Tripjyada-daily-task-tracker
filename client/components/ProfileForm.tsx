@@ -94,7 +94,7 @@ export default function ProfileForm() {
   return (
     <div className="max-w-lg space-y-5">
       <div>
-        <h1 className="text-lg font-semibold dark:text-gray-100">My profile</h1>
+        <h1 className="page-title">My profile</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">Update your photo and personal details.</p>
       </div>
 

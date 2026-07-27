@@ -204,7 +204,7 @@ export default function AdminAuditPage() {
     <div className="mx-auto w-full max-w-[1320px]">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Audit Log</h1>
+          <h1 className="page-title">Audit Log</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Recent admin and super admin actions across users and tasks.</p>
           <p className="text-xs text-gray-400 dark:text-gray-500">Refreshes automatically every 15 seconds.</p>
         </div>

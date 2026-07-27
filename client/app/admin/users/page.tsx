@@ -260,7 +260,7 @@ export default function AdminUsersPage() {
   if (!authLoading && !isSuperAdmin(user?.role)) {
     return (
       <div className="card max-w-3xl space-y-2">
-        <h1 className="text-lg font-semibold">Platform Access Control</h1>
+        <h1 className="page-title">Platform Access Control</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Only a super admin can approve signups, promote admins, or change platform roles.
         </p>
@@ -286,7 +286,7 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-lg font-semibold">Platform Access Control</h1>
+        <h1 className="page-title">Platform Access Control</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Approve new accounts, assign employee, admin, or super admin privileges, and manage the platform hierarchy.
         </p>

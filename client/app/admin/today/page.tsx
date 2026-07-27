@@ -380,7 +380,7 @@ export default function AdminTodayPage() {
     <div className="mx-auto w-full max-w-[1680px]">
       <div className="mb-6 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_360px] 2xl:items-end">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold">Team Tasks — Live Panel</h1>
+          <h1 className="page-title">Team Tasks — Live Panel</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {formatTaskDate(date)}
             {isToday && <span className="ml-2 rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">Today</span>}

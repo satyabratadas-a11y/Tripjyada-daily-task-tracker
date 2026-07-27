@@ -286,7 +286,7 @@ export default function OwnTodayView() {
 
   return (
     <div>
-      <h1 className="mb-1 text-lg font-semibold">Today&apos;s Tasks</h1>
+      <h1 className="mb-1 page-title">Today&apos;s Tasks</h1>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
       </p>

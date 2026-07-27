@@ -25,15 +25,17 @@ function sortTasksByDate(tasks: Task[]) {
   });
 }
 
-function AddTaskForm({
+function AddTaskSection({
   date,
   label,
   hint,
+  divider,
   onAdded,
 }: {
   date: string;
   label: string;
   hint?: string;
+  divider?: boolean;
   onAdded: (task: Task) => void;
 }) {
   const [assignedTask, setAssignedTask] = useState('');
@@ -62,20 +64,25 @@ function AddTaskForm({
   }
 
   return (
-    <div className="card mb-6 flex flex-wrap items-end gap-3">
-      <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
-        <input className="input" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
-        {hint && <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{hint}</p>}
+    <div className={divider ? 'mt-4 border-t border-gray-100 pt-4 dark:border-white/10' : ''}>
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{label}</p>
+        {hint && <p className="text-xs text-gray-400 dark:text-gray-500">{hint}</p>}
       </div>
-      <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief (optional)</label>
-        <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-full sm:min-w-[180px] sm:flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Task</label>
+          <input className="input" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
+        </div>
+        <div className="w-full sm:min-w-[180px] sm:flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief (optional)</label>
+          <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
+        </div>
+        <button className="btn-primary w-full sm:w-auto" disabled={saving || !assignedTask} onClick={handleAdd}>
+          {saving ? 'Adding…' : 'Add task'}
+        </button>
       </div>
-      <button className="btn-primary w-full sm:w-auto" disabled={saving || !assignedTask} onClick={handleAdd}>
-        {saving ? 'Adding…' : 'Add task'}
-      </button>
-      {error && <p className="w-full text-xs text-status-flagged">{error}</p>}
+      {error && <p className="mt-2 text-xs text-status-flagged">{error}</p>}
     </div>
   );
 }
@@ -292,7 +299,7 @@ export default function OwnLogView() {
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-lg font-semibold">My Monthly Log</h1>
+        <h1 className="page-title">My Monthly Log</h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -316,16 +323,19 @@ export default function OwnLogView() {
         <MonthCalendar month={month} year={year} tasks={tasks} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <div className="min-w-0">
           <SummaryBar stats={stats} />
-          <AddTaskForm date={todayKey} label="Task for today" onAdded={handleTaskAdded} />
-          {selectedDate && (
-            <AddTaskForm
-              key={selectedDate}
-              date={selectedDate}
-              label={`Task for ${formatTaskDate(selectedDate)}`}
-              hint={selectedDate !== todayKey ? 'Backfilling a day you forgot to log.' : undefined}
-              onAdded={handleTaskAdded}
-            />
-          )}
+          <div className="card mb-6">
+            <AddTaskSection date={todayKey} label="Task for today" onAdded={handleTaskAdded} />
+            {selectedDate && (
+              <AddTaskSection
+                key={selectedDate}
+                date={selectedDate}
+                label={`Task for ${formatTaskDate(selectedDate)}`}
+                hint={selectedDate !== todayKey ? 'Backfilling a day you forgot to log.' : undefined}
+                divider
+                onAdded={handleTaskAdded}
+              />
+            )}
+          </div>
         </div>
       </div>
 

@@ -74,29 +74,34 @@ export default function AppShell({
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center gap-2 border-b border-white/10 px-5 py-4">
-          <Image src="/logo.webp" alt="Tripjyada" width={32} height={32} className="rounded" />
+        <div className="flex items-center gap-2.5 border-b border-white/[0.08] px-5 py-4">
+          <Image src="/logo.webp" alt="Tripjyada" width={32} height={32} className="rounded-lg" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-white">Tripjyada Task Tracker</p>
             {user && (
-              <p className="truncate text-xs text-gray-400">
+              <p className="truncate text-xs text-gray-500">
                 {user.name} · {formatRoleLabel(user.role)}
               </p>
             )}
           </div>
         </div>
-        <nav className="flex flex-col gap-1 p-3">
+        <nav className="flex flex-col gap-0.5 p-3">
           {navItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition ${
-                  active ? 'bg-brand text-white shadow-sm shadow-brand/40' : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${
+                  active ? 'bg-white/10 font-medium text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                {item.icon && <i className={`${item.icon} w-4 text-center text-xs`} />}
+                {active && (
+                  <span className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-gradient-to-b from-brand-light to-brand" />
+                )}
+                {item.icon && (
+                  <i className={`${item.icon} w-4 text-center text-xs ${active ? 'text-brand-light' : ''}`} />
+                )}
                 {item.label}
               </Link>
             );
@@ -105,7 +110,7 @@ export default function AppShell({
         <div className="p-3">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-white/10"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
           >
             <i className="fa-solid fa-right-from-bracket text-xs" />
             Log out
@@ -114,7 +119,7 @@ export default function AppShell({
       </aside>
       <div className="flex min-h-0 flex-1 flex-col md:ml-60">
         {(headerActions || user) && (
-          <div className="hidden shrink-0 items-center justify-end gap-3 bg-ink px-6 py-2 md:flex">
+          <div className="hidden shrink-0 items-center justify-end gap-3 bg-ink px-6 py-2.5 md:flex">
             {headerActions}
             {user && (
               <Link href={profileRouteForRole(user.role)} title="My profile">

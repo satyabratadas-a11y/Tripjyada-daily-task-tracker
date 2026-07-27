@@ -233,7 +233,7 @@ export default function ReportsPage() {
     <div>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-lg font-semibold">Reports</h1>
+          <h1 className="page-title">Reports</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Progress graph and progress bars based on admin task status.</p>
         </div>
 

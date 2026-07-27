@@ -175,7 +175,7 @@ export default function ContentHubPage() {
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold">Content Calendars</h1>
+          <h1 className="page-title">Content Calendars</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Manage independent content calendars for every client or brand.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

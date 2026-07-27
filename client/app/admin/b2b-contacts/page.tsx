@@ -75,7 +75,7 @@ export default function B2BContactsAdminPage() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-lg font-semibold dark:text-gray-100">B2B contacts</h1>
+          <h1 className="mb-1 page-title">B2B contacts</h1>
           <p className="text-sm text-gray-500">Business cards captured by all B2B agents.</p>
         </div>
         <a href={downloadUrl('/api/contacts/export')} className="btn-secondary text-xs">

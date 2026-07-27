@@ -54,7 +54,7 @@ export default function AdminDashboardPage() {
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-lg font-semibold">Progress Dashboard</h1>
+        <h1 className="page-title">Progress Dashboard</h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (

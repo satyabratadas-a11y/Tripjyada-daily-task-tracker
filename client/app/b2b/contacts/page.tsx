@@ -89,7 +89,7 @@ export default function MyContactsPage() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold dark:text-gray-100">B2B contacts</h1>
+          <h1 className="page-title">B2B contacts</h1>
           <p className="text-sm text-gray-500">Business cards captured by every B2B agent — shared, not just your own.</p>
         </div>
         <a href={downloadUrl('/api/contacts/export')} className="btn-secondary text-xs">

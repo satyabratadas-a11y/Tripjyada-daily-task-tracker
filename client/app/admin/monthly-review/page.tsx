@@ -63,7 +63,7 @@ export default function MonthlyReviewPage() {
       <div>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-lg font-semibold">Monthly Review</h1>
+            <h1 className="page-title">Monthly Review</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Every task owner&apos;s month at a glance — flagged and in-progress work included, not just what&apos;s Done.
             </p>

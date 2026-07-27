@@ -46,12 +46,12 @@ function cellClass({
   isSunday: boolean;
 }) {
   const hasFlag = Boolean(summary && summary.flagged > 0);
-  if (isSelected && hasFlag) return 'border-status-flagged bg-status-flagged text-white';
-  if (isSelected) return 'border-brand bg-brand text-white';
+  if (isSelected && hasFlag) return 'border-status-flagged bg-status-flagged text-white shadow-sm shadow-status-flagged/40';
+  if (isSelected) return 'border-brand bg-gradient-to-b from-brand to-brand-dark text-white shadow-sm shadow-brand/40';
   if (hasFlag) return 'border-status-flagged/50 bg-status-flagged/10 text-red-900 hover:border-status-flagged dark:text-red-300 dark:hover:border-status-flagged/70';
-  if (isToday) return 'border-brand text-brand dark:border-brand-light/50 dark:text-brand-light';
+  if (isToday) return 'border-brand/60 bg-brand/5 font-semibold text-brand dark:border-brand-light/50 dark:bg-brand-light/10 dark:text-brand-light';
   if (isSunday) return 'border-transparent bg-status-sunday/30 text-gray-700 hover:border-gray-300 dark:bg-status-sunday/10 dark:text-gray-300 dark:hover:border-white/15';
-  return 'border-transparent text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:border-white/15';
+  return 'border-transparent text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:hover:border-white/15 dark:hover:bg-white/5';
 }
 
 export default function MonthCalendar({
@@ -99,7 +99,7 @@ export default function MonthCalendar({
               key={dateKey}
               type="button"
               onClick={() => onSelectDate(isSelected ? null : dateKey)}
-              className={`flex flex-col items-center rounded-md border py-1.5 text-xs transition ${cellClass({
+              className={`flex flex-col items-center rounded-lg border py-1.5 text-xs transition-all duration-150 ${cellClass({
                 summary,
                 isSelected,
                 isToday,

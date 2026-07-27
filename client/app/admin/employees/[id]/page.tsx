@@ -46,26 +46,28 @@ function AddDayForm({ employeeId, defaultDate, onAdded }: { employeeId: string; 
   }
 
   return (
-    <div className="card mb-6 flex flex-wrap items-end gap-3">
-      <div className="w-full sm:w-auto">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Date</label>
-        <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
-        <p className="mt-1 max-w-[10rem] text-[11px] text-gray-400 dark:text-gray-500">
-          Pick any date — use this to backfill a day they forgot.
-        </p>
+    <div className="card mb-6">
+      <p className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Assign a task</p>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-full sm:w-auto">
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+            Date <span className="font-normal normal-case text-gray-400 dark:text-gray-500">(any day — e.g. to backfill)</span>
+          </label>
+          <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+        <div className="w-full sm:min-w-[180px] sm:flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Assigned task</label>
+          <input className="input" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
+        </div>
+        <div className="w-full sm:min-w-[180px] sm:flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief</label>
+          <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
+        </div>
+        <button className="btn-primary w-full sm:w-auto" disabled={saving || !assignedTask} onClick={handleAdd}>
+          {saving ? 'Saving…' : 'Assign'}
+        </button>
       </div>
-      <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Assigned task</label>
-        <input className="input" value={assignedTask} onChange={(e) => setAssignedTask(e.target.value)} />
-      </div>
-      <div className="w-full sm:min-w-[180px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief</label>
-        <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
-      </div>
-      <button className="btn-primary w-full sm:w-auto" disabled={saving || !assignedTask} onClick={handleAdd}>
-        {saving ? 'Saving…' : 'Assign'}
-      </button>
-      {error && <p className="w-full text-xs text-status-flagged">{error}</p>}
+      {error && <p className="mt-2 text-xs text-status-flagged">{error}</p>}
     </div>
   );
 }
@@ -391,7 +393,7 @@ export default function EmployeeMonthlyLogPage() {
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-lg font-semibold">
+        <h1 className="page-title">
           Task review{employee ? ` — ${employee.name}'s Monthly Log` : ''}
         </h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">

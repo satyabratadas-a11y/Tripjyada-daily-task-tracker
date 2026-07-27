@@ -18,7 +18,7 @@ export default function CapturePage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-lg font-semibold dark:text-gray-100">Scan business card</h1>
+      <h1 className="mb-1 page-title">Scan business card</h1>
       <p className="mb-4 text-sm text-gray-500">{MODE_DESCRIPTIONS[mode]}</p>
 
       <div className="mx-auto mb-4 flex max-w-xl gap-2">

@@ -76,7 +76,7 @@ export default function ClientCalendarLayout({ children }: { children: React.Rea
         <div className="mb-4 flex items-center gap-3">
           <span className="h-9 w-9 shrink-0 rounded-lg" style={{ backgroundColor: client.brandColor }} />
           <div>
-            <h1 className="text-lg font-semibold">{client.name}</h1>
+            <h1 className="page-title">{client.name}</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {client.industry || 'Industry not set'} · your role: {client.myRole || 'admin'}
             </p>
