@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
-import { AdminStatusBadge, SourceBadge } from '@/components/StatusBadge';
+import { AdminStatusBadge, SourceBadge, ProjectStatusBadge, OverdueBadge } from '@/components/StatusBadge';
 import SummaryBar from '@/components/SummaryBar';
-import type { Task } from '@/lib/types';
+import type { Task, Project } from '@/lib/types';
 
 interface TodayRow {
   employee: { id: string; name: string; jobTitle: string };
@@ -73,6 +74,192 @@ function AddTaskForm({ onAdded }: { onAdded: () => void }) {
           Cancel
         </button>
       </div>
+    </div>
+  );
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function NewProjectForm({ onAdded }: { onAdded: (project: Project) => void }) {
+  const [title, setTitle] = useState('');
+  const [startDate, setStartDate] = useState(todayStr());
+  const [endDate, setEndDate] = useState(todayStr());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleAdd() {
+    setSaving(true);
+    setError('');
+    try {
+      const { project } = await api.post<{ project: Project }>('/api/projects/self', { title, startDate, endDate });
+      setTitle('');
+      onAdded(project);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to add project');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 p-3 dark:border-white/10">
+      <div className="w-full sm:min-w-[200px] sm:flex-1">
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Title</label>
+        <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Start</label>
+        <input type="date" className="input" value={startDate} max={endDate} onChange={(e) => setStartDate(e.target.value)} />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Deadline</label>
+        <input type="date" className="input" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
+      </div>
+      <button className="btn-primary w-full sm:w-auto" disabled={saving || !title.trim()} onClick={handleAdd}>
+        {saving ? 'Adding…' : 'Add project'}
+      </button>
+      {error && <p className="w-full text-xs text-status-flagged">{error}</p>}
+    </div>
+  );
+}
+
+function ProjectQuickRow({ project, projectsBase, onLogged }: { project: Project; projectsBase: string; onLogged: () => void }) {
+  const [logging, setLogging] = useState(false);
+  const [assignedTask, setAssignedTask] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleLog() {
+    setSaving(true);
+    setError('');
+    try {
+      await api.post('/api/tasks/self', {
+        date: todayStr(),
+        assignedTask,
+        project: project._id,
+        memberStatus: 'on_progress',
+      });
+      setAssignedTask('');
+      setLogging(false);
+      onLogged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to log progress');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-gray-200 p-3 dark:border-white/10">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{project.title}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Due {formatDate(project.endDate)}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {project.overdue && <OverdueBadge />}
+          <ProjectStatusBadge value={project.status} />
+          <Link href={`${projectsBase}/${project._id}`} className="btn-secondary text-xs">
+            Open
+          </Link>
+        </div>
+      </div>
+
+      {logging ? (
+        <div className="mt-2 flex flex-wrap items-end gap-2">
+          <input
+            className="input flex-1"
+            placeholder="What did you do today on this?"
+            value={assignedTask}
+            onChange={(e) => setAssignedTask(e.target.value)}
+            autoFocus
+          />
+          <button className="btn-primary w-full sm:w-auto" disabled={saving || !assignedTask.trim()} onClick={handleLog}>
+            {saving ? 'Adding…' : 'Add'}
+          </button>
+          <button className="btn-secondary w-full sm:w-auto" onClick={() => setLogging(false)}>
+            Cancel
+          </button>
+          {error && <p className="w-full text-xs text-status-flagged">{error}</p>}
+        </div>
+      ) : (
+        <button className="btn-secondary mt-2 text-xs" onClick={() => setLogging(true)}>
+          + Log today&apos;s progress
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Lets the user create a deadline-bound project and log today's progress against it, right
+ * where their daily tasks already live — the full history/calendar view is one click away via
+ * each project's "Open" link. */
+function TodayProjectsPanel({ projectsBase, onLoggedEntry }: { projectsBase: string; onLoggedEntry: () => void }) {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showNewForm, setShowNewForm] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const data = await api.get<{ projects: Project[] }>('/api/projects');
+      setProjects(data.projects.filter((p) => p.status === 'active'));
+    } catch {
+      // Non-fatal — the rest of Today's Tasks still works without this panel.
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  return (
+    <div className="card mb-6">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">My Projects</p>
+        <button className="btn-secondary text-xs" onClick={() => setShowNewForm((v) => !v)}>
+          {showNewForm ? 'Cancel' : '+ New project'}
+        </button>
+      </div>
+
+      {showNewForm && (
+        <NewProjectForm
+          onAdded={(project) => {
+            setProjects((prev) => [...prev, project]);
+            setShowNewForm(false);
+          }}
+        />
+      )}
+
+      {loading ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+      ) : projects.length === 0 ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No active projects yet. Start one above — set a title and a deadline, then log progress here each day.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {projects.map((p) => (
+            <ProjectQuickRow
+              key={p._id}
+              project={p}
+              projectsBase={projectsBase}
+              onLogged={() => {
+                onLoggedEntry();
+                load();
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -299,6 +486,9 @@ export default function OwnTodayView() {
 
       {!loading && <SummaryBar stats={stats} />}
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
+
+      <TodayProjectsPanel projectsBase={user?.role === 'employee' ? '/employee/projects' : '/admin/projects'} onLoggedEntry={load} />
+
       <AddTaskForm onAdded={load} />
 
       {loading ? (
