@@ -239,13 +239,11 @@ export default function ContentEntryDrawer({
 
               <fieldset disabled={!canEdit} className={!canEdit ? 'opacity-70' : ''}>
                 <EntryFormFields
-                  clientId={clientId}
                   value={form}
                   onChange={(patch) => setForm((prev) => (prev ? { ...prev, ...patch } : prev))}
                   pillars={pillars}
                   campaigns={campaigns}
                   members={members}
-                  aiEnabled={canEdit}
                 />
               </fieldset>
 

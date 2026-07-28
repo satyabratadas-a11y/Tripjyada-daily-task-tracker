@@ -312,6 +312,7 @@ export default function EmployeeMonthlyLogPage() {
   const [trendExpanded, setTrendExpanded] = useState(false);
   const [memberStatusFilter, setMemberStatusFilter] = useState('');
   const [adminStatusFilter, setAdminStatusFilter] = useState('');
+  const [dateSortOrder, setDateSortOrder] = useState<'asc' | 'desc'>('asc');
 
   async function load() {
     setLoading(true);
@@ -372,8 +373,12 @@ export default function EmployeeMonthlyLogPage() {
     let result = selectedDate ? tasks.filter((t) => t.date.slice(0, 10) === selectedDate) : tasks;
     if (memberStatusFilter) result = result.filter((t) => t.memberStatus === memberStatusFilter);
     if (adminStatusFilter) result = result.filter((t) => t.adminStatus === adminStatusFilter);
+    result = [...result].sort((a, b) => {
+      const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+      return dateSortOrder === 'asc' ? diff : -diff;
+    });
     return result;
-  }, [tasks, selectedDate, memberStatusFilter, adminStatusFilter]);
+  }, [tasks, selectedDate, memberStatusFilter, adminStatusFilter, dateSortOrder]);
 
   // Selection is scoped to what's currently visible — switching month/day shouldn't carry a
   // hidden selection along that the admin can no longer see or reason about.
@@ -571,7 +576,17 @@ export default function EmployeeMonthlyLogPage() {
                     aria-label="Select all tasks in view"
                   />
                 </th>
-                <th>Date</th>
+                <th>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 hover:text-brand"
+                    onClick={() => setDateSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+                    title={`Sort by date ${dateSortOrder === 'asc' ? 'descending' : 'ascending'}`}
+                  >
+                    Date
+                    <i className={`fa-solid fa-arrow-${dateSortOrder === 'asc' ? 'up' : 'down'} text-[10px]`} />
+                  </button>
+                </th>
                 <th>Day type</th>
                 <th>Source</th>
                 <th>Assigned task</th>

@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { api, ApiError } from '@/lib/api';
 import {
   CONTENT_FORMATS,
   CONTENT_STATUSES,
@@ -46,100 +44,19 @@ export function emptyEntryFormValue(date: string): EntryFormValue {
   };
 }
 
-function AIButton({ onClick, loading, label }: { onClick: () => void; loading: boolean; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      className="inline-flex items-center gap-1 rounded-md border border-brand/30 bg-brand/5 px-2 py-1 text-[11px] font-medium text-brand transition hover:bg-brand/10 disabled:opacity-50 dark:border-brand-light/30 dark:bg-brand/10 dark:text-brand-light"
-      title={label}
-    >
-      <i className={loading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-wand-magic-sparkles'} />
-      {loading ? 'Generating…' : label}
-    </button>
-  );
-}
-
 export default function EntryFormFields({
-  clientId,
   value,
   onChange,
   pillars,
   campaigns,
   members,
-  aiEnabled = true,
 }: {
-  clientId: string;
   value: EntryFormValue;
   onChange: (patch: Partial<EntryFormValue>) => void;
   pillars: ContentPillar[];
   campaigns: Campaign[];
   members: ClientMember[];
-  aiEnabled?: boolean;
 }) {
-  const [aiError, setAiError] = useState('');
-  const [loadingField, setLoadingField] = useState<'idea' | 'hook' | 'caption' | null>(null);
-
-  async function generateIdea() {
-    setLoadingField('idea');
-    setAiError('');
-    try {
-      const data = await api.post<{ ideas: string[] }>(`/api/content/clients/${clientId}/ai/ideas`, {
-        pillar: value.pillar || undefined,
-        platform: value.platform,
-        count: 1,
-      });
-      if (data.ideas?.[0]) onChange({ idea: data.ideas[0] });
-    } catch (err) {
-      setAiError(err instanceof ApiError ? err.message : 'Failed to generate idea');
-    } finally {
-      setLoadingField(null);
-    }
-  }
-
-  async function generateHook() {
-    if (!value.idea.trim()) {
-      setAiError('Add a content idea first');
-      return;
-    }
-    setLoadingField('hook');
-    setAiError('');
-    try {
-      const data = await api.post<{ hook: string }>(`/api/content/clients/${clientId}/ai/hook`, {
-        idea: value.idea,
-        platform: value.platform,
-      });
-      if (data.hook) onChange({ hook: data.hook });
-    } catch (err) {
-      setAiError(err instanceof ApiError ? err.message : 'Failed to generate hook');
-    } finally {
-      setLoadingField(null);
-    }
-  }
-
-  async function generateCaption() {
-    if (!value.idea.trim()) {
-      setAiError('Add a content idea first');
-      return;
-    }
-    setLoadingField('caption');
-    setAiError('');
-    try {
-      const data = await api.post<{ caption: string }>(`/api/content/clients/${clientId}/ai/caption`, {
-        idea: value.idea,
-        hook: value.hook,
-        platform: value.platform,
-        cta: value.cta,
-      });
-      if (data.caption) onChange({ caption: data.caption });
-    } catch (err) {
-      setAiError(err instanceof ApiError ? err.message : 'Failed to generate caption');
-    } finally {
-      setLoadingField(null);
-    }
-  }
-
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -210,26 +127,17 @@ export default function EntryFormFields({
       </div>
 
       <div>
-        <div className="mb-1 flex items-center justify-between">
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Content idea</label>
-          {aiEnabled && <AIButton onClick={generateIdea} loading={loadingField === 'idea'} label="Generate idea" />}
-        </div>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Content idea</label>
         <textarea className="input" rows={2} value={value.idea} onChange={(e) => onChange({ idea: e.target.value })} />
       </div>
 
       <div>
-        <div className="mb-1 flex items-center justify-between">
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Hook / Angle</label>
-          {aiEnabled && <AIButton onClick={generateHook} loading={loadingField === 'hook'} label="Generate hook" />}
-        </div>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hook / Angle</label>
         <textarea className="input" rows={2} value={value.hook} onChange={(e) => onChange({ hook: e.target.value })} />
       </div>
 
       <div>
-        <div className="mb-1 flex items-center justify-between">
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Caption</label>
-          {aiEnabled && <AIButton onClick={generateCaption} loading={loadingField === 'caption'} label="Generate caption" />}
-        </div>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Caption</label>
         <textarea className="input" rows={4} value={value.caption} onChange={(e) => onChange({ caption: e.target.value })} />
       </div>
 
@@ -248,8 +156,6 @@ export default function EntryFormFields({
           ))}
         </select>
       </div>
-
-      {aiError && <p className="text-xs text-status-flagged">{aiError}</p>}
     </div>
   );
 }

@@ -64,7 +64,6 @@ export default function NewEntryModal({
           </button>
         </div>
         <EntryFormFields
-          clientId={clientId}
           value={form}
           onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
           pillars={pillars}
