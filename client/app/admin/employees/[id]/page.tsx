@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { AdminStatusBadge, MemberStatusBadge, DayTypeCell, SourceBadge } from '@/components/StatusBadge';
 import MonthCalendar from '@/components/MonthCalendar';
 import SummaryBar from '@/components/SummaryBar';
 import TrendChart, { type TrendPoint } from '@/components/TrendChart';
-import type { Task } from '@/lib/types';
+import type { DashboardRow, Task } from '@/lib/types';
 
 const ADMIN_STATUS_OPTIONS = ['pending', 'completed', 'on_progress', 'incomplete', 'flagged'];
 
@@ -289,11 +289,13 @@ function BulkReviewBar({
 
 export default function EmployeeMonthlyLogPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const now = new Date();
   const [month, setMonth] = useState(Number(searchParams.get('month')) || now.getMonth() + 1);
   const [year, setYear] = useState(Number(searchParams.get('year')) || now.getFullYear());
   const queryDate = searchParams.get('date');
+  const [roster, setRoster] = useState<DashboardRow['employee'][]>([]);
   // Admins only ever self-add their tasks (there's no "assign" concept above employee level), so
   // the assign-a-task form only makes sense when reviewing an employee's log.
   const canAssignTasks = (searchParams.get('targetRole') || 'employee') === 'employee';
@@ -347,6 +349,22 @@ export default function EmployeeMonthlyLogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
+  // Every employee/admin this caller is allowed to review, so switching who you're looking at
+  // doesn't mean going back to the dashboard or monthly review table first.
+  useEffect(() => {
+    api
+      .get<{ rows: DashboardRow[] }>(`/api/dashboard?month=${month}&year=${year}`)
+      .then((data) => setRoster(data.rows.map((r) => r.employee).sort((a, b) => a.name.localeCompare(b.name))))
+      .catch(() => setRoster([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function switchEmployee(newId: string) {
+    if (!newId || newId === params.id) return;
+    const target = roster.find((r) => r.id === newId);
+    router.push(`/admin/employees/${newId}?month=${month}&year=${year}&targetRole=${target?.role || 'employee'}`);
+  }
+
   const filteredTasks = useMemo(
     () => (selectedDate ? tasks.filter((t) => t.date.slice(0, 10) === selectedDate) : tasks),
     [tasks, selectedDate]
@@ -397,6 +415,20 @@ export default function EmployeeMonthlyLogPage() {
           Task review{employee ? ` — ${employee.name}'s Monthly Log` : ''}
         </h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          {roster.length > 0 && (
+            <select
+              className="input w-full sm:w-auto"
+              value={String(params.id)}
+              onChange={(e) => switchEmployee(e.target.value)}
+            >
+              {roster.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                  {r.jobTitle ? ` — ${r.jobTitle}` : ''}
+                </option>
+              ))}
+            </select>
+          )}
           <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>
