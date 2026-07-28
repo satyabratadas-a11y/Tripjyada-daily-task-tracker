@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { formatRoleLabel, profileRouteForRole } from '@/lib/roles';
+import { useAppNavigationHistory } from '@/lib/useAppNavigationHistory';
 import Avatar from '@/components/Avatar';
 
 interface NavItem {
@@ -27,6 +28,7 @@ export default function AppShell({
   const { user, logout } = useAuth();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { canGoBack, depth, goBack, clearHistory } = useAppNavigationHistory(user?.id);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -34,6 +36,7 @@ export default function AppShell({
 
   async function handleLogout() {
     try {
+      clearHistory();
       await logout();
     } finally {
       router.replace('/login');
@@ -44,6 +47,17 @@ export default function AppShell({
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50 text-gray-900 dark:bg-ink dark:text-gray-100">
       <div className="relative z-50 flex shrink-0 items-center justify-between bg-ink px-4 py-3 md:hidden">
         <div className="flex min-w-0 items-center gap-2">
+          {canGoBack && (
+            <button
+              type="button"
+              onClick={goBack}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/5 text-sm text-gray-300 transition hover:bg-white/10 hover:text-white"
+              title={`Go back${depth > 1 ? ` (${depth} pages in history)` : ''}`}
+              aria-label="Go back"
+            >
+              <i className="fa-solid fa-arrow-left" />
+            </button>
+          )}
           <Image src="/logo.webp" alt="Tripjyada" width={28} height={28} className="rounded" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-white">Tripjyada Task Tracker</p>
@@ -119,13 +133,28 @@ export default function AppShell({
       </aside>
       <div className="flex min-h-0 flex-1 flex-col md:ml-60">
         {(headerActions || user) && (
-          <div className="hidden shrink-0 items-center justify-end gap-3 bg-ink px-6 py-2.5 md:flex">
-            {headerActions}
-            {user && (
-              <Link href={profileRouteForRole(user.role)} title="My profile">
-                <Avatar name={user.name} avatarUrl={user.avatarUrl} size={32} />
-              </Link>
-            )}
+          <div className="hidden shrink-0 items-center justify-between gap-3 bg-ink px-6 py-2.5 md:flex">
+            <div>
+              {canGoBack && (
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="flex h-9 w-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-sm text-gray-300 transition hover:bg-white/10 hover:text-white"
+                  title={`Go back${depth > 1 ? ` (${depth} pages in history)` : ''}`}
+                  aria-label="Go back"
+                >
+                  <i className="fa-solid fa-arrow-left" />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              {headerActions}
+              {user && (
+                <Link href={profileRouteForRole(user.role)} title="My profile">
+                  <Avatar name={user.name} avatarUrl={user.avatarUrl} size={32} />
+                </Link>
+              )}
+            </div>
           </div>
         )}
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">{children}</main>

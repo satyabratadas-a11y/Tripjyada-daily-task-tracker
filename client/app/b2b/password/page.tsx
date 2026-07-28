@@ -1,10 +1,5 @@
-import ChangePasswordForm from '@/components/ChangePasswordForm';
+import { redirect } from 'next/navigation';
 
 export default function ChangePasswordPage() {
-  return (
-    <div className="max-w-sm">
-      <h1 className="mb-4 page-title">Change password</h1>
-      <ChangePasswordForm />
-    </div>
-  );
+  redirect('/b2b/profile#security');
 }

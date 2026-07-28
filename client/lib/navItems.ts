@@ -18,7 +18,6 @@ const BASE_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/audit', label: 'Audit Log', icon: 'fa-solid fa-clock-rotate-left' },
   { href: '/content', label: 'Content Calendar', icon: 'fa-solid fa-layer-group' },
   { href: '/admin/profile', label: 'My Profile', icon: 'fa-solid fa-user' },
-  { href: '/admin/password', label: 'Change Password', icon: 'fa-solid fa-key' },
 ];
 
 export const EMPLOYEE_NAV_ITEMS: NavItem[] = [
@@ -27,14 +26,12 @@ export const EMPLOYEE_NAV_ITEMS: NavItem[] = [
   { href: '/employee/projects', label: 'Projects', icon: 'fa-solid fa-diagram-project' },
   { href: '/content', label: 'Content Calendar', icon: 'fa-solid fa-layer-group' },
   { href: '/employee/profile', label: 'My Profile', icon: 'fa-solid fa-user' },
-  { href: '/employee/password', label: 'Change Password', icon: 'fa-solid fa-key' },
 ];
 
 export const B2B_AGENT_NAV_ITEMS: NavItem[] = [
   { href: '/b2b/capture', label: 'Scan Card', icon: 'fa-solid fa-camera' },
   { href: '/b2b/contacts', label: 'B2B Contacts', icon: 'fa-solid fa-address-card' },
   { href: '/b2b/profile', label: 'My Profile', icon: 'fa-solid fa-user' },
-  { href: '/b2b/password', label: 'Change Password', icon: 'fa-solid fa-key' },
 ];
 
 export function getNavItemsForRole(role?: Role | null): NavItem[] {

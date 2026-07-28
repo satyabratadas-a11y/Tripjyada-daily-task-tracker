@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, ApiError, API_URL } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import Avatar from '@/components/Avatar';
+import ChangePasswordForm from '@/components/ChangePasswordForm';
 import type { User } from '@/lib/types';
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
@@ -108,7 +109,9 @@ export default function ProfileForm() {
     <div className="max-w-lg space-y-5">
       <div>
         <h1 className="page-title">My profile</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Update your photo and personal details.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Manage your photo, personal details, and password.
+        </p>
       </div>
 
       <div className="card flex items-center gap-5">
@@ -187,6 +190,16 @@ export default function ProfileForm() {
           {saving ? 'Saving…' : 'Save changes'}
         </button>
       </form>
+
+      <section id="security" className="scroll-mt-6 space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Change password</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Use your current password to set a new one.
+          </p>
+        </div>
+        <ChangePasswordForm />
+      </section>
     </div>
   );
 }
