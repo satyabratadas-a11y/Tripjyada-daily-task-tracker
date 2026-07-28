@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { useClientCalendar } from '@/lib/ClientCalendarContext';
 import { isAdminLike } from '@/lib/roles';
 import type { ClientRole, ContentClient } from '@/lib/content-types';
+
+interface DirectoryUser {
+  id: string;
+  name: string;
+  email: string;
+  jobTitle: string;
+  role: string;
+}
 
 const ROLE_DESCRIPTIONS: Record<ClientRole, string> = {
   owner: 'Full calendar control — manage client settings, pillars, campaigns, content, and approvals.',
@@ -25,6 +33,19 @@ export default function TeamPage() {
   const [role, setRole] = useState<ClientRole>('editor');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [directory, setDirectory] = useState<DirectoryUser[]>([]);
+
+  useEffect(() => {
+    if (!canManage) return;
+    api
+      .get<{ users: DirectoryUser[] }>('/api/admin/directory')
+      .then((data) => setDirectory(data.users))
+      .catch(() => setDirectory([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canManage]);
+
+  const memberIds = new Set(client.members.map((m) => m.user));
+  const invitableUsers = directory.filter((u) => !memberIds.has(u.id));
 
   async function handleInvite() {
     if (!email.trim()) {
@@ -68,6 +89,24 @@ export default function TeamPage() {
       {canManage && (
         <div className="card mb-5 space-y-3">
           <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Invite a team member</p>
+          {invitableUsers.length > 0 && (
+            <select
+              className="input"
+              value=""
+              onChange={(e) => {
+                const picked = invitableUsers.find((u) => u.id === e.target.value);
+                if (picked) setEmail(picked.email);
+              }}
+            >
+              <option value="">Choose an employee…</option>
+              {invitableUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                  {u.jobTitle ? ` — ${u.jobTitle}` : ''} ({u.email})
+                </option>
+              ))}
+            </select>
+          )}
           <div className="flex flex-wrap gap-2">
             <input
               className="input flex-1"
