@@ -1,4 +1,5 @@
 import { cloudinaryThumb } from '@/lib/cloudinaryUrl';
+import { API_URL } from '@/lib/api';
 
 function initialsFor(name: string) {
   const initials = name
@@ -22,12 +23,16 @@ export default function Avatar({
   className?: string;
 }) {
   if (avatarUrl) {
-    // Cloudinary-hosted, not a local/allow-listed domain, so next/image is more friction than
-    // it's worth here — a plain img avoids next.config remotePatterns for a 32px thumbnail.
+    // Database avatars are served by the API. Prefix relative paths only when production uses a
+    // separate API origin; blob previews and Google/legacy hosted URLs remain untouched.
+    const resolvedUrl = avatarUrl.startsWith('/api/')
+      ? `${API_URL.replace(/\/$/, '')}${avatarUrl}`
+      : cloudinaryThumb(avatarUrl, size);
+
     // eslint-disable-next-line @next/next/no-img-element
     return (
       <img
-        src={cloudinaryThumb(avatarUrl, size)}
+        src={resolvedUrl}
         alt={name}
         width={size}
         height={size}

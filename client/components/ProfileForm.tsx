@@ -6,6 +6,9 @@ import { useAuth } from '@/lib/AuthContext';
 import Avatar from '@/components/Avatar';
 import type { User } from '@/lib/types';
 
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
+const AVATAR_TYPES = new Set(['image/jpeg', 'image/png']);
+
 export default function ProfileForm() {
   const { user, completeLogin } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -20,8 +23,7 @@ export default function ProfileForm() {
 
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState('');
-  // Shown immediately on file select so the photo feels instant instead of waiting on the
-  // Cloudinary round trip; swapped out for the real URL (or dropped) once the request settles.
+  // Shown immediately on file select while the database upload completes.
   const [previewUrl, setPreviewUrl] = useState('');
 
   useEffect(() => {
@@ -53,6 +55,17 @@ export default function ProfileForm() {
 
   async function handlePhotoSelect(file: File) {
     setPhotoError('');
+    if (!AVATAR_TYPES.has(file.type)) {
+      setPhotoError('Please choose a valid JPG or PNG image');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      setPhotoError('Profile photo must be 5MB or smaller');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     setPreviewUrl(URL.createObjectURL(file));
     setUploading(true);
     try {
@@ -111,7 +124,7 @@ export default function ProfileForm() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png"
               className="hidden"
               disabled={uploading}
               onChange={(e) => {
