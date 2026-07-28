@@ -118,7 +118,9 @@ export type NotificationType =
   | 'comment'
   | 'due_soon'
   | 'signup_pending'
-  | 'project_overdue';
+  | 'project_overdue'
+  | 'task_reminder'
+  | 'task_gap';
 
 export interface ContentNotification {
   id: string;
@@ -129,4 +131,5 @@ export interface ContentNotification {
   entry: string | null;
   read: boolean;
   createdAt: string;
+  actor: { id: string; name: string; avatarUrl: string } | null;
 }
