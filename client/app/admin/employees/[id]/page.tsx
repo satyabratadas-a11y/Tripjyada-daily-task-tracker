@@ -416,32 +416,33 @@ export default function EmployeeMonthlyLogPage() {
         </h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           {roster.length > 0 && (
-            <select
-              className="input w-full sm:w-auto"
-              value={String(params.id)}
-              onChange={(e) => switchEmployee(e.target.value)}
-            >
-              {roster.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                  {r.jobTitle ? ` — ${r.jobTitle}` : ''}
+            <div className="w-full sm:w-auto">
+              <select
+                className="input"
+                value={String(params.id)}
+                onChange={(e) => switchEmployee(e.target.value)}
+              >
+                {roster.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                    {r.jobTitle ? ` — ${r.jobTitle}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="w-full sm:w-auto">
+            <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>
+                  {new Date(2000, m - 1, 1).toLocaleString(undefined, { month: 'long' })}
                 </option>
               ))}
             </select>
-          )}
-          <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>
-                {new Date(2000, m - 1, 1).toLocaleString(undefined, { month: 'long' })}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            className="input w-full sm:w-24"
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-          />
+          </div>
+          <div className="w-full sm:w-24">
+            <input type="number" className="input" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+          </div>
         </div>
       </div>
       <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
