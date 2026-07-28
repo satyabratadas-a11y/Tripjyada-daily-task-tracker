@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Modal from '@/components/Modal';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
@@ -52,56 +53,59 @@ function AssignProjectForm({ employees, onAssigned }: { employees: EmployeeOptio
     }
   }
 
-  if (!open) {
-    return (
+  return (
+    <>
       <button className="btn-primary w-full sm:w-auto" onClick={() => setOpen(true)}>
         + Assign project
       </button>
-    );
-  }
-
-  return (
-    <div className="card mb-6">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="w-full sm:min-w-[180px]">
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Employee</label>
-          <select className="input" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
-            <option value="" disabled>
-              Select employee
-            </option>
-            {employees.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-                {e.jobTitle ? ` — ${e.jobTitle}` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="w-full sm:min-w-[160px] sm:flex-1">
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Title</label>
-          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
-        </div>
-        <div className="w-full sm:min-w-[160px] sm:flex-1">
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief (optional)</label>
-          <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
-        </div>
-        <div className="w-full sm:w-auto">
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Start date</label>
-          <input type="date" className="input" value={startDate} max={endDate} onChange={(e) => setStartDate(e.target.value)} />
-        </div>
-        <div className="w-full sm:w-auto">
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">End date</label>
-          <input type="date" className="input" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
-        </div>
-        <button className="btn-primary w-full sm:w-auto" disabled={saving || !employeeId || !title.trim()} onClick={handleAssign}>
-          {saving ? 'Assigning…' : 'Assign'}
-        </button>
-        <button className="btn-secondary w-full sm:w-auto" onClick={() => setOpen(false)}>
-          Cancel
-        </button>
-      </div>
-      {error && <p className="mt-2 text-xs text-status-flagged">{error}</p>}
-    </div>
+      {open && (
+        <Modal title="Assign project" onClose={() => setOpen(false)}>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Employee</label>
+              <select className="input" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} autoFocus>
+                <option value="" disabled>
+                  Select employee
+                </option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name}
+                    {e.jobTitle ? ` — ${e.jobTitle}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Title</label>
+              <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Brief (optional)</label>
+              <input className="input" value={brief} onChange={(e) => setBrief(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Start date</label>
+                <input type="date" className="input" value={startDate} max={endDate} onChange={(e) => setStartDate(e.target.value)} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">End date</label>
+                <input type="date" className="input" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          {error && <p className="mt-3 text-xs text-status-flagged">{error}</p>}
+          <div className="mt-4 flex gap-2">
+            <button className="btn-primary" disabled={saving || !employeeId || !title.trim()} onClick={handleAssign}>
+              {saving ? 'Assigning…' : 'Assign'}
+            </button>
+            <button className="btn-secondary" onClick={() => setOpen(false)}>
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+    </>
   );
 }
 

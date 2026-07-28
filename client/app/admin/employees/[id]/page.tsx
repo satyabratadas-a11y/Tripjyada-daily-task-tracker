@@ -11,6 +11,7 @@ import TrendChart, { type TrendPoint } from '@/components/TrendChart';
 import type { DashboardRow, Task } from '@/lib/types';
 
 const ADMIN_STATUS_OPTIONS = ['pending', 'completed', 'on_progress', 'incomplete', 'flagged'];
+const MEMBER_STATUS_OPTIONS = ['not_started', 'on_progress', 'done', 'not_done'];
 
 function formatTaskDate(date: string) {
   return new Date(date).toLocaleDateString(undefined, {
@@ -309,6 +310,8 @@ export default function EmployeeMonthlyLogPage() {
   const [bulkNotice, setBulkNotice] = useState('');
   const [trendPoints, setTrendPoints] = useState<TrendPoint[] | null>(null);
   const [trendExpanded, setTrendExpanded] = useState(false);
+  const [memberStatusFilter, setMemberStatusFilter] = useState('');
+  const [adminStatusFilter, setAdminStatusFilter] = useState('');
 
   async function load() {
     setLoading(true);
@@ -365,16 +368,18 @@ export default function EmployeeMonthlyLogPage() {
     router.push(`/admin/employees/${newId}?month=${month}&year=${year}&targetRole=${target?.role || 'employee'}`);
   }
 
-  const filteredTasks = useMemo(
-    () => (selectedDate ? tasks.filter((t) => t.date.slice(0, 10) === selectedDate) : tasks),
-    [tasks, selectedDate]
-  );
+  const filteredTasks = useMemo(() => {
+    let result = selectedDate ? tasks.filter((t) => t.date.slice(0, 10) === selectedDate) : tasks;
+    if (memberStatusFilter) result = result.filter((t) => t.memberStatus === memberStatusFilter);
+    if (adminStatusFilter) result = result.filter((t) => t.adminStatus === adminStatusFilter);
+    return result;
+  }, [tasks, selectedDate, memberStatusFilter, adminStatusFilter]);
 
   // Selection is scoped to what's currently visible — switching month/day shouldn't carry a
   // hidden selection along that the admin can no longer see or reason about.
   useEffect(() => {
     setSelectedIds([]);
-  }, [selectedDate, month, year]);
+  }, [selectedDate, month, year, memberStatusFilter, adminStatusFilter]);
 
   function toggleSelected(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -497,6 +502,42 @@ export default function EmployeeMonthlyLogPage() {
         </div>
       )}
 
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="w-full sm:w-auto">
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Member status</label>
+          <select className="input" value={memberStatusFilter} onChange={(e) => setMemberStatusFilter(e.target.value)}>
+            <option value="">Any status</option>
+            {MEMBER_STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="w-full sm:w-auto">
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Verified status</label>
+          <select className="input" value={adminStatusFilter} onChange={(e) => setAdminStatusFilter(e.target.value)}>
+            <option value="">Any status</option>
+            {ADMIN_STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+        {(memberStatusFilter || adminStatusFilter) && (
+          <button
+            className="btn-secondary w-full sm:w-auto"
+            onClick={() => {
+              setMemberStatusFilter('');
+              setAdminStatusFilter('');
+            }}
+          >
+            Clear status filters
+          </button>
+        )}
+      </div>
+
       {bulkNotice && <p className="mb-4 text-sm text-status-completed">{bulkNotice}</p>}
 
       {selectedIds.length > 0 && (
@@ -510,7 +551,13 @@ export default function EmployeeMonthlyLogPage() {
       {loading ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : filteredTasks.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{selectedDate ? 'No tasks on this day.' : 'No tasks this month yet.'}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {memberStatusFilter || adminStatusFilter
+            ? 'No tasks match these status filters.'
+            : selectedDate
+              ? 'No tasks on this day.'
+              : 'No tasks this month yet.'}
+        </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">
           <table className="tracker w-full">

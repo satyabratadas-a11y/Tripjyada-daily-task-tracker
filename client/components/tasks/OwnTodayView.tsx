@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
+import Modal from '@/components/Modal';
 import { AdminStatusBadge, SourceBadge, ProjectStatusBadge, OverdueBadge } from '@/components/StatusBadge';
 import SummaryBar from '@/components/SummaryBar';
 import type { Task, Project } from '@/lib/types';
@@ -86,7 +87,7 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function NewProjectForm({ onAdded }: { onAdded: (project: Project) => void }) {
+function NewProjectForm({ onAdded, onClose }: { onAdded: (project: Project) => void; onClose: () => void }) {
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState(todayStr());
   const [endDate, setEndDate] = useState(todayStr());
@@ -108,24 +109,33 @@ function NewProjectForm({ onAdded }: { onAdded: (project: Project) => void }) {
   }
 
   return (
-    <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 p-3 dark:border-white/10">
-      <div className="w-full sm:min-w-[200px] sm:flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Title</label>
-        <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
+    <Modal title="New project" onClose={onClose}>
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Title</label>
+          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Start</label>
+            <input type="date" className="input" value={startDate} max={endDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Deadline</label>
+            <input type="date" className="input" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+        </div>
       </div>
-      <div>
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Start</label>
-        <input type="date" className="input" value={startDate} max={endDate} onChange={(e) => setStartDate(e.target.value)} />
+      {error && <p className="mt-3 text-xs text-status-flagged">{error}</p>}
+      <div className="mt-4 flex gap-2">
+        <button className="btn-primary" disabled={saving || !title.trim()} onClick={handleAdd}>
+          {saving ? 'Adding…' : 'Add project'}
+        </button>
+        <button className="btn-secondary" onClick={onClose}>
+          Cancel
+        </button>
       </div>
-      <div>
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Deadline</label>
-        <input type="date" className="input" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
-      </div>
-      <button className="btn-primary w-full sm:w-auto" disabled={saving || !title.trim()} onClick={handleAdd}>
-        {saving ? 'Adding…' : 'Add project'}
-      </button>
-      {error && <p className="w-full text-xs text-status-flagged">{error}</p>}
-    </div>
+    </Modal>
   );
 }
 
@@ -254,13 +264,14 @@ function TodayProjectsPanel({ projectsBase, onLoggedEntry }: { projectsBase: str
     <div className="card mb-6">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">My Projects</p>
-        <button className="btn-secondary text-xs" onClick={() => setShowNewForm((v) => !v)}>
-          {showNewForm ? 'Cancel' : '+ New project'}
+        <button className="btn-secondary text-xs" onClick={() => setShowNewForm(true)}>
+          + New project
         </button>
       </div>
 
       {showNewForm && (
         <NewProjectForm
+          onClose={() => setShowNewForm(false)}
           onAdded={(project) => {
             setProjects((prev) => [...prev, project]);
             setShowNewForm(false);
