@@ -344,11 +344,6 @@ export default function ReportsPage() {
               </tbody>
             </table>
           </div>
-
-          <div className="mt-8 space-y-2 text-sm text-gray-600 dark:text-gray-300">
-            <p>Manager sign-off: ____________________</p>
-            <p>HR sign-off: ____________________</p>
-          </div>
         </>
       )}
     </div>

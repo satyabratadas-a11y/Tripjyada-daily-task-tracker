@@ -18,6 +18,7 @@ const BASE_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/report', label: 'Reports', icon: 'fa-solid fa-file-excel' },
   { href: '/admin/audit', label: 'Audit Log', icon: 'fa-solid fa-clock-rotate-left' },
   { href: '/content', label: 'Content Calendar', icon: 'fa-solid fa-layer-group' },
+  { href: '/notify', label: 'Push Notifications', icon: 'fa-solid fa-paper-plane' },
   { href: '/admin/profile', label: 'My Profile', icon: 'fa-solid fa-user' },
 ];
 
@@ -26,12 +27,14 @@ export const EMPLOYEE_NAV_ITEMS: NavItem[] = [
   { href: '/employee/log', label: 'My Monthly Log', icon: 'fa-solid fa-calendar-days' },
   { href: '/employee/projects', label: 'Projects', icon: 'fa-solid fa-diagram-project' },
   { href: '/content', label: 'Content Calendar', icon: 'fa-solid fa-layer-group' },
+  { href: '/notify', label: 'Push Notifications', icon: 'fa-solid fa-paper-plane' },
   { href: '/employee/profile', label: 'My Profile', icon: 'fa-solid fa-user' },
 ];
 
 export const B2B_AGENT_NAV_ITEMS: NavItem[] = [
   { href: '/b2b/capture', label: 'Scan Card', icon: 'fa-solid fa-camera' },
   { href: '/b2b/contacts', label: 'B2B Contacts', icon: 'fa-solid fa-address-card' },
+  { href: '/notify', label: 'Push Notifications', icon: 'fa-solid fa-paper-plane' },
   { href: '/b2b/profile', label: 'My Profile', icon: 'fa-solid fa-user' },
 ];
 

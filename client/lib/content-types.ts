@@ -120,7 +120,8 @@ export type NotificationType =
   | 'signup_pending'
   | 'project_overdue'
   | 'task_reminder'
-  | 'task_gap';
+  | 'task_gap'
+  | 'direct';
 
 export interface ContentNotification {
   id: string;

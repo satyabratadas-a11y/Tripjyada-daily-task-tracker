@@ -43,6 +43,7 @@ const TYPE_ICONS: Record<string, string> = {
   project_overdue: 'fa-solid fa-triangle-exclamation',
   task_reminder: 'fa-solid fa-list-check',
   task_gap: 'fa-solid fa-calendar-xmark',
+  direct: 'fa-solid fa-paper-plane',
 };
 
 // A new-signup alert only a super admin can act on, an overdue project, and a multi-day task gap
@@ -209,7 +210,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-96 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-ink-light">
+        <div className="fixed inset-x-3 top-16 z-50 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-ink-light md:absolute md:inset-x-auto md:right-0 md:top-auto md:mt-2 md:w-96 md:max-w-[calc(100vw-1rem)]">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-white/10">
             <p className="text-lg font-bold text-gray-950 dark:text-white">Notifications</p>
             {unreadCount > 0 && (

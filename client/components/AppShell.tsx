@@ -67,7 +67,6 @@ export default function AppShell({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {headerActions}
           {user && (
             <Link href={profileRouteForRole(user.role)} title="My profile">
               <Avatar name={user.name} avatarUrl={user.avatarUrl} size={28} />
@@ -86,7 +85,7 @@ export default function AppShell({
       {mobileOpen && <button type="button" className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setMobileOpen(false)} />}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 h-screen w-60 max-w-[80vw] shrink-0 overflow-y-auto bg-ink transition-transform md:max-w-none md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-60 max-w-[80vw] shrink-0 flex-col bg-ink transition-transform md:max-w-none md:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -101,7 +100,12 @@ export default function AppShell({
             )}
           </div>
         </div>
-        <nav className="flex flex-col gap-0.5 p-3">
+        {headerActions && (
+          <div className="flex shrink-0 items-center justify-center gap-3 border-b border-white/[0.08] px-3 py-2.5 md:hidden">
+            {headerActions}
+          </div>
+        )}
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
           {navItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
@@ -123,7 +127,7 @@ export default function AppShell({
             );
           })}
         </nav>
-        <div className="p-3">
+        <div className="shrink-0 p-3">
           <button
             onClick={handleLogout}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
