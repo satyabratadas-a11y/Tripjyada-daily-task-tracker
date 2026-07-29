@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { formatRoleLabel, profileRouteForRole } from '@/lib/roles';
+import { useAttendanceCheckin } from '@/lib/useAttendanceCheckin';
 import { useAppNavigationHistory } from '@/lib/useAppNavigationHistory';
 import Avatar from '@/components/Avatar';
 
@@ -28,6 +29,7 @@ export default function AppShell({
   const { user, logout } = useAuth();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  useAttendanceCheckin(user);
   const { canGoBack, depth, goBack, clearHistory } = useAppNavigationHistory(user?.id);
 
   useEffect(() => {
