@@ -108,12 +108,12 @@ export default function AttendanceView() {
         />
       </div>
 
-      {!loading && <SummaryBar stats={stats} />}
+      {!loading && !error && <SummaryBar stats={stats} />}
       {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
 
       {loading ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
-      ) : filteredRows.length === 0 ? (
+      ) : error ? null : filteredRows.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">No employees match &ldquo;{nameFilter}&rdquo;.</p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10">

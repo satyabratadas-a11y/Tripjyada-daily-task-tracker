@@ -10,13 +10,19 @@ function istDayKey(date = new Date()) {
 }
 
 function storageKey(userId: string) {
-  return `attendance-checkin-${userId}`;
+  // v2 ignores markers written by the original implementation before its API request had
+  // actually succeeded. Those stale markers otherwise suppress retries for the rest of the day.
+  return `attendance-checkin-v2-${userId}`;
 }
 
-function checkIn(body: Record<string, number | string>) {
-  api.post('/api/attendance/checkin', body).catch(() => {
+async function checkIn(body: Record<string, number | string>, key: string, day: string) {
+  try {
+    await api.post('/api/attendance/checkin', body);
+    localStorage.setItem(key, day);
+  } catch {
     // Best-effort — attendance shouldn't ever block or interrupt using the app.
-  });
+    // Do not write the daily marker: the next page load must retry a failed check-in.
+  }
 }
 
 /**
@@ -29,11 +35,11 @@ export function useAttendanceCheckin(user: User | null) {
   useEffect(() => {
     if (!user) return;
     const key = storageKey(user.id);
-    if (localStorage.getItem(key) === istDayKey()) return;
-    localStorage.setItem(key, istDayKey());
+    const day = istDayKey();
+    if (localStorage.getItem(key) === day) return;
 
     if (!navigator.geolocation) {
-      checkIn({ status: 'unsupported' });
+      void checkIn({ status: 'unsupported' }, key, day);
       return;
     }
 
@@ -44,14 +50,18 @@ export function useAttendanceCheckin(user: User | null) {
     // login or any part of the UI either way.
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        checkIn({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        });
+        void checkIn(
+          {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          },
+          key,
+          day
+        );
       },
       (error) => {
-        checkIn({ status: error.code === error.PERMISSION_DENIED ? 'denied' : 'error' });
+        void checkIn({ status: error.code === error.PERMISSION_DENIED ? 'denied' : 'error' }, key, day);
       },
       { timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: 60 * 60 * 1000 }
     );
