@@ -105,7 +105,7 @@ export default function AppShell({
             {headerActions}
           </div>
         )}
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
+        <nav className="sidebar-nav flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
           {navItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
