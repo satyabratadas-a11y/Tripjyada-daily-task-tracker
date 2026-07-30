@@ -20,7 +20,8 @@ const LOCATION_STATUS_LABELS: Record<string, string> = {
   denied: 'Location permission denied',
   unsupported: "Device doesn't support location",
   unavailable: 'Location not yet available',
-  error: 'Could not determine location',
+  error: "Device couldn't determine its location",
+  timeout: 'Location request timed out',
 };
 
 function formatTime(iso: string) {

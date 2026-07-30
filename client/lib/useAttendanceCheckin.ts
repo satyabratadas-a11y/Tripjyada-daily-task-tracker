@@ -2,7 +2,11 @@ import { useEffect } from 'react';
 import { api } from './api';
 import type { User } from './types';
 
-const GEOLOCATION_TIMEOUT_MS = 8000;
+// 8s was too tight for WiFi-based positioning (common on a desktop/laptop with no GPS), which can
+// legitimately take longer than a phone's GPS fix — that showed up as an unhelpful, generic
+// "could not determine location" indistinguishable from a device that genuinely has no way to
+// locate itself at all.
+const GEOLOCATION_TIMEOUT_MS = 15000;
 
 function istDayKey(date = new Date()) {
   const ist = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
@@ -61,7 +65,10 @@ export function useAttendanceCheckin(user: User | null) {
         );
       },
       (error) => {
-        void checkIn({ status: error.code === error.PERMISSION_DENIED ? 'denied' : 'error' }, key, day);
+        let status = 'error';
+        if (error.code === error.PERMISSION_DENIED) status = 'denied';
+        else if (error.code === error.TIMEOUT) status = 'timeout';
+        void checkIn({ status }, key, day);
       },
       { timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: 60 * 60 * 1000 }
     );
