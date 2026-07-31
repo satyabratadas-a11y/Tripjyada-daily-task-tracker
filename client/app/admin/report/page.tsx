@@ -278,7 +278,7 @@ export default function ReportsPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">These bars update when admin changes task status.</p>
               </div>
 
-              <div className="space-y-4">
+              <div className="max-h-[420px] space-y-4 overflow-y-auto pr-1">
                 <ProgressBar
                   label="Team overall"
                   pct={data.team.progressPct}
