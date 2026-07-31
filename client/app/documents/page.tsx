@@ -424,25 +424,22 @@ export default function DocumentsPage() {
 
   return (
     <div>
-      <div className="card mx-auto mb-6 max-w-2xl space-y-4 text-center">
+      <div className="card mx-auto mb-6 max-w-2xl space-y-4 border-transparent bg-ink-light text-center">
         <span className="inline-flex items-center rounded-full border border-brand/40 bg-brand/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-brand dark:border-brand-light/30 dark:bg-brand/10 dark:text-brand-light">
           Office Portal
         </span>
-        <div className="flex flex-col items-center gap-1">
-          <Image src="/logo.webp" alt="Tripjyada" width={40} height={40} className="rounded-lg" />
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">TRIPJYADA</h1>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
-            One stop for all your travel needs
-          </p>
-        </div>
+        {/* Full lockup (mark + wordmark + tagline) baked into one asset, white-on-transparent —
+            the card above is always dark so it stays legible regardless of the site's own
+            light/dark toggle. */}
+        <Image src="/doc_logo.png" alt="Tripjyada — One stop for all your travel needs" width={1080} height={189} className="mx-auto h-auto w-full max-w-xs" priority />
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             type="button"
             onClick={() => setView('list')}
             className={
               view === 'list'
-                ? 'inline-flex items-center gap-1.5 rounded-full border border-brand bg-brand/10 px-3.5 py-1.5 text-xs font-medium text-brand dark:border-brand-light/60 dark:text-brand-light'
-                : 'inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3.5 py-1.5 text-xs font-medium text-gray-600 dark:border-white/10 dark:bg-ink-light dark:text-gray-300'
+                ? 'inline-flex items-center gap-1.5 rounded-full border border-brand-light/60 bg-brand/10 px-3.5 py-1.5 text-xs font-medium text-brand-light'
+                : 'inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-ink-light px-3.5 py-1.5 text-xs font-medium text-gray-300'
             }
           >
             {departments.length} Departments
