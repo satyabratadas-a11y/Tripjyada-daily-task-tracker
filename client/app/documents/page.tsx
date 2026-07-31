@@ -2,21 +2,41 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { api, ApiError, API_URL } from '@/lib/api';
+import { api, ApiError, API_URL, downloadUrl } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { isAdminLike } from '@/lib/roles';
 import type { Department } from '@/lib/types';
 
-const DOC_ICONS: Record<string, string> = {
+// Legacy fallback for documents uploaded before the GridFS migration, which only recorded a
+// Cloudinary resourceType (raw/image/video) rather than a real mimeType.
+const LEGACY_RESOURCE_ICONS: Record<string, string> = {
   raw: 'fa-solid fa-file-lines',
   image: 'fa-solid fa-file-image',
   video: 'fa-solid fa-file-video',
 };
 
 function docIconFor(department: Department) {
-  if (!department.document) return 'fa-solid fa-file';
-  if (department.document.type === 'link') return 'fa-solid fa-link';
-  return DOC_ICONS[department.document.resourceType || 'raw'] || 'fa-solid fa-file-lines';
+  const doc = department.document;
+  if (!doc) return 'fa-solid fa-file';
+  if (doc.mimeType) {
+    if (doc.mimeType.startsWith('image/')) return 'fa-solid fa-file-image';
+    if (doc.mimeType.startsWith('video/')) return 'fa-solid fa-file-video';
+    if (doc.mimeType === 'application/pdf') return 'fa-solid fa-file-pdf';
+    if (doc.mimeType.includes('spreadsheet') || doc.mimeType.includes('excel') || doc.mimeType === 'text/csv') {
+      return 'fa-solid fa-file-excel';
+    }
+    if (doc.mimeType.includes('word')) return 'fa-solid fa-file-word';
+    if (doc.mimeType.includes('presentation') || doc.mimeType.includes('powerpoint')) return 'fa-solid fa-file-powerpoint';
+    return 'fa-solid fa-file-lines';
+  }
+  if (doc.type === 'link') return 'fa-solid fa-link';
+  return LEGACY_RESOURCE_ICONS[doc.resourceType || 'raw'] || 'fa-solid fa-file-lines';
+}
+
+/** A GridFS-backed document's url is our own relative streaming route; a shared link (or a
+ * pre-migration Cloudinary upload) is already an absolute url and must be left as-is. */
+function resolveDocUrl(url: string) {
+  return url.startsWith('/') ? downloadUrl(url) : url;
 }
 
 interface DeptFormData {
@@ -311,7 +331,7 @@ function AllUploadedFiles({
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <a href={d.document!.url} target="_blank" rel="noopener noreferrer" className="btn-secondary">
+                <a href={resolveDocUrl(d.document!.url)} target="_blank" rel="noopener noreferrer" className="btn-secondary">
                   Open
                 </a>
                 <button
@@ -526,7 +546,7 @@ export default function DocumentsPage() {
                   <p className="truncate font-semibold">{department.name}</p>
                   {department.document ? (
                     <a
-                      href={department.document.url}
+                      href={resolveDocUrl(department.document.url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-1 flex items-center gap-1.5 truncate text-xs italic text-brand hover:underline dark:text-brand-light"
@@ -542,7 +562,12 @@ export default function DocumentsPage() {
                 <p className="flex-1 text-xs text-gray-500 dark:text-gray-400">{department.description}</p>
 
                 {department.document ? (
-                  <a href={department.document.url} target="_blank" rel="noopener noreferrer" className="btn-primary w-full justify-center">
+                  <a
+                    href={resolveDocUrl(department.document.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary w-full justify-center"
+                  >
                     Open
                   </a>
                 ) : (

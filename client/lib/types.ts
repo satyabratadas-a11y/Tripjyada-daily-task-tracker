@@ -110,6 +110,7 @@ export interface DepartmentDocument {
   type: DepartmentDocumentType;
   url: string;
   name: string;
+  mimeType?: string;
   resourceType?: string;
   updatedAt?: string;
 }
