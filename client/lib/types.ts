@@ -104,6 +104,27 @@ export interface Contact {
   updatedAt: string;
 }
 
+export type DepartmentDocumentType = 'link' | 'file';
+
+export interface DepartmentDocument {
+  type: DepartmentDocumentType;
+  url: string;
+  name: string;
+  resourceType?: string;
+  updatedAt?: string;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  tag: string;
+  description: string;
+  order: number;
+  document: DepartmentDocument | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SuperAdminPlatformMetrics {
   totalUsers: number;
   activeUsers: number;
