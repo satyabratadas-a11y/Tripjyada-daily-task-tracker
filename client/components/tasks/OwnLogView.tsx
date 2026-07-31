@@ -87,7 +87,19 @@ function AddTaskSection({
   );
 }
 
-function OwnRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task) => void; onDeleted: (id: string) => void }) {
+function OwnRow({
+  task,
+  selected,
+  onToggleSelect,
+  onSaved,
+  onDeleted,
+}: {
+  task: Task;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onSaved: (t: Task) => void;
+  onDeleted: (id: string) => void;
+}) {
   const editableTitle = task.createdBy === 'employee';
   const [editing, setEditing] = useState(false);
   const [assignedTask, setAssignedTask] = useState(task.assignedTask);
@@ -147,6 +159,9 @@ function OwnRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task) =
 
     return (
       <tr className={rowClass}>
+        <td data-label="Select">
+          <input type="checkbox" checked={selected} onChange={onToggleSelect} aria-label={`Select ${task.assignedTask}`} />
+        </td>
         <td data-label="Date">{dateLabel}</td>
         <td data-label="Day type">
           <DayTypeCell value={task.dayType} />
@@ -196,7 +211,7 @@ function OwnRow({ task, onSaved, onDeleted }: { task: Task; onSaved: (t: Task) =
 
   return (
     <tr>
-      <td colSpan={10}>
+      <td colSpan={11}>
         <div className="flex flex-wrap items-end gap-2 py-2">
           {editableTitle && (
             <>
@@ -240,6 +255,10 @@ export default function OwnLogView() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<Task['memberStatus']>('done');
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkError, setBulkError] = useState('');
 
   async function load() {
     setLoading(true);
@@ -261,6 +280,7 @@ export default function OwnLogView() {
   useEffect(() => {
     load();
     setSelectedDate(null);
+    setSelectedIds(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month, year]);
 
@@ -294,6 +314,38 @@ export default function OwnLogView() {
     setSelectedDate(taskDateKey);
     setMonth(taskMonth);
     setYear(taskYear);
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => (prev.size === filteredTasks.length ? new Set() : new Set(filteredTasks.map((t) => t._id))));
+  }
+
+  async function handleBulkUpdate() {
+    setBulkSaving(true);
+    setBulkError('');
+    try {
+      const { updated, skipped } = await api.patch<{ updated: Task[]; skipped: { id: string; reason: string }[] }>(
+        '/api/tasks/bulk/employee',
+        { taskIds: [...selectedIds], memberStatus: bulkStatus }
+      );
+      const updatedById = new Map(updated.map((t) => [t._id, t]));
+      setTasks((prev) => sortTasksByDate(prev.map((t) => updatedById.get(t._id) ?? t)));
+      setSelectedIds(new Set());
+      if (skipped.length > 0) setBulkError(`${skipped.length} task(s) could not be updated.`);
+    } catch (err) {
+      setBulkError(err instanceof ApiError ? err.message : 'Failed to update selected tasks');
+    } finally {
+      setBulkSaving(false);
+    }
   }
 
   return (
@@ -358,36 +410,70 @@ export default function OwnLogView() {
           {selectedDate ? 'No tasks on this day.' : 'No tasks logged this month yet.'}
         </p>
       ) : (
-        <div className="max-h-[600px] overflow-y-auto rounded-lg border border-gray-200 dark:border-white/10">
-          <table className="tracker w-full">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Day type</th>
-                <th>Source</th>
-                <th>Task</th>
-                <th>Brief</th>
-                <th>Proof link</th>
-                <th>My status</th>
-                <th>Verified status</th>
-                <th>Reviewer notes</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTasks.map((t) => (
-                <OwnRow
-                  key={t._id}
-                  task={t}
-                  onSaved={(updated) =>
-                    setTasks((prev) => sortTasksByDate(prev.map((x) => (x._id === updated._id ? updated : x))))
-                  }
-                  onDeleted={(id) => setTasks((prev) => prev.filter((x) => x._id !== id))}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {selectedIds.size > 0 && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-brand/30 bg-brand/5 p-3">
+              <p className="text-sm font-medium">{selectedIds.size} selected</p>
+              <select
+                className="input w-full sm:w-auto"
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value as Task['memberStatus'])}
+              >
+                <option value="on_progress">On Progress</option>
+                <option value="done">Done</option>
+                <option value="not_done">Not Done</option>
+              </select>
+              <button className="btn-primary w-full sm:w-auto" disabled={bulkSaving} onClick={handleBulkUpdate}>
+                {bulkSaving ? 'Updating…' : `Mark as ${bulkStatus === 'on_progress' ? 'On Progress' : bulkStatus === 'done' ? 'Done' : 'Not Done'}`}
+              </button>
+              <button className="btn-secondary w-full sm:w-auto" onClick={() => setSelectedIds(new Set())}>
+                Clear selection
+              </button>
+              {bulkError && <p className="w-full text-xs text-status-flagged">{bulkError}</p>}
+            </div>
+          )}
+
+          <div className="max-h-[600px] overflow-y-auto rounded-lg border border-gray-200 dark:border-white/10">
+            <table className="tracker w-full">
+              <thead>
+                <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size > 0 && selectedIds.size === filteredTasks.length}
+                      onChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </th>
+                  <th>Date</th>
+                  <th>Day type</th>
+                  <th>Source</th>
+                  <th>Task</th>
+                  <th>Brief</th>
+                  <th>Proof link</th>
+                  <th>My status</th>
+                  <th>Verified status</th>
+                  <th>Reviewer notes</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.map((t) => (
+                  <OwnRow
+                    key={t._id}
+                    task={t}
+                    selected={selectedIds.has(t._id)}
+                    onToggleSelect={() => toggleSelected(t._id)}
+                    onSaved={(updated) =>
+                      setTasks((prev) => sortTasksByDate(prev.map((x) => (x._id === updated._id ? updated : x))))
+                    }
+                    onDeleted={(id) => setTasks((prev) => prev.filter((x) => x._id !== id))}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
