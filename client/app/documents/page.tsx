@@ -94,110 +94,239 @@ function DepartmentForm({
   );
 }
 
-function DocumentPanel({
-  department,
+function AddReportPanel({
+  departments,
   onSaveLink,
   onUploadFile,
-  onRemoveDocument,
 }: {
-  department: Department;
-  onSaveLink: (url: string, name: string) => Promise<void>;
-  onUploadFile: (file: File) => Promise<void>;
-  onRemoveDocument: () => Promise<void>;
+  departments: Department[];
+  onSaveLink: (departmentId: string, url: string, title: string) => Promise<void>;
+  onUploadFile: (departmentId: string, file: File, title: string) => Promise<void>;
 }) {
+  const [mode, setMode] = useState<'file' | 'link'>('file');
+  const [departmentId, setDepartmentId] = useState(departments[0]?.id || '');
+  const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
-  const [linkName, setLinkName] = useState('');
-  const [savingLink, setSavingLink] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [removing, setRemoving] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!departmentId && departments.length > 0) setDepartmentId(departments[0].id);
+  }, [departments, departmentId]);
+
+  function resolveTitle() {
+    return title.trim() || departments.find((d) => d.id === departmentId)?.name || '';
+  }
+
+  async function handleUpload() {
+    if (!departmentId) {
+      setError('Choose a department first');
+      return;
+    }
+    if (!file) {
+      setError('Choose a file to upload');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await onUploadFile(departmentId, file, resolveTitle());
+      setFile(null);
+      setTitle('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to upload file');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleSaveLink() {
+    if (!departmentId) {
+      setError('Choose a department first');
+      return;
+    }
     if (!url.trim()) {
       setError('Paste a link to save it');
       return;
     }
-    setSavingLink(true);
+    setSaving(true);
     setError('');
     try {
-      await onSaveLink(url.trim(), linkName.trim());
+      await onSaveLink(departmentId, url.trim(), resolveTitle());
       setUrl('');
-      setLinkName('');
+      setTitle('');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to save link');
     } finally {
-      setSavingLink(false);
+      setSaving(false);
     }
   }
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setError('');
-    try {
-      await onUploadFile(file);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to upload file');
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }
-
-  async function handleRemove() {
-    if (!window.confirm('Remove this department’s document?')) return;
-    setRemoving(true);
-    setError('');
-    try {
-      await onRemoveDocument();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to remove document');
-    } finally {
-      setRemoving(false);
-    }
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) setFile(dropped);
   }
 
   return (
-    <div className="space-y-2 rounded-lg border border-dashed border-gray-300 p-3 dark:border-white/10">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Share or upload document</p>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          className="input"
-          placeholder="Paste a Google Sheet / doc link"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
-        <input
-          className="input sm:w-40"
-          placeholder="Label (optional)"
-          value={linkName}
-          onChange={(e) => setLinkName(e.target.value)}
-        />
-        <button className="btn-secondary shrink-0" disabled={savingLink} onClick={handleSaveLink}>
-          {savingLink ? 'Saving…' : 'Save link'}
+    <div className="card mb-6 space-y-4">
+      <p className="text-sm font-semibold">Add Report</p>
+
+      <div className="inline-flex rounded-lg border border-gray-300 p-1 dark:border-white/10">
+        <button
+          type="button"
+          onClick={() => setMode('file')}
+          className={`rounded-md px-3.5 py-1.5 text-xs font-medium transition ${
+            mode === 'file'
+              ? 'bg-gradient-to-b from-brand to-brand-dark text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+          }`}
+        >
+          <i className="fa-solid fa-folder-open mr-1.5" /> Upload File
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('link')}
+          className={`rounded-md px-3.5 py-1.5 text-xs font-medium transition ${
+            mode === 'link'
+              ? 'bg-gradient-to-b from-brand to-brand-dark text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+          }`}
+        >
+          <i className="fa-solid fa-link mr-1.5" /> Add Link
         </button>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" className="btn-secondary" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-          <i className={uploading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-upload'} />
-          {uploading ? 'Uploading…' : 'Upload Excel / file'}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          accept=".xlsx,.xls,.csv,.pdf,.doc,.docx,.ppt,.pptx"
-          onChange={handleFileChange}
-        />
-        {department.document && (
-          <button type="button" className="btn-secondary text-status-flagged" disabled={removing} onClick={handleRemove}>
-            <i className="fa-solid fa-trash" /> {removing ? 'Removing…' : 'Remove'}
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Department</label>
+          <select className="input" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+            {departments.length === 0 && <option value="">No departments yet</option>}
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Title (shown on the card)</label>
+          <input
+            className="input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. May 2026 Sales Report"
+          />
+        </div>
+      </div>
+
+      {mode === 'file' ? (
+        <>
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition ${
+              dragOver ? 'border-brand bg-brand/5' : 'border-gray-300 dark:border-white/10'
+            }`}
+          >
+            <i className="fa-solid fa-folder-open text-2xl text-brand dark:text-brand-light" />
+            <p className="text-sm text-gray-600 dark:text-gray-300">{file ? file.name : 'Drop file here or click to browse'}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">PDF, Excel, Word, Image — any format</p>
+          </div>
+          <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          {error && <p className="text-xs text-status-flagged">{error}</p>}
+          <button className="btn-primary" disabled={saving || departments.length === 0} onClick={handleUpload}>
+            <i className={saving ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-upload'} />
+            {saving ? 'Uploading…' : 'Upload File'}
           </button>
-        )}
+        </>
+      ) : (
+        <>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Link</label>
+            <input
+              className="input"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Paste a Google Sheet / doc link"
+            />
+          </div>
+          {error && <p className="text-xs text-status-flagged">{error}</p>}
+          <button className="btn-primary" disabled={saving || departments.length === 0} onClick={handleSaveLink}>
+            <i className={saving ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-link'} />
+            {saving ? 'Saving…' : 'Save Link'}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function AllUploadedFiles({
+  departments,
+  onRefresh,
+  onRemove,
+}: {
+  departments: Department[];
+  onRefresh: () => void;
+  onRemove: (departmentId: string) => Promise<void>;
+}) {
+  const withDocs = departments.filter((d) => d.document);
+
+  return (
+    <div className="card mb-6 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold">All Uploaded Files</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Click Open to view any file directly.</p>
+        </div>
+        <button type="button" className="btn-secondary" onClick={onRefresh}>
+          <i className="fa-solid fa-arrows-rotate" /> Refresh
+        </button>
       </div>
-      {error && <p className="text-xs text-status-flagged">{error}</p>}
+
+      {withDocs.length === 0 ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">No files uploaded yet.</p>
+      ) : (
+        <div className="divide-y divide-gray-100 dark:divide-white/10">
+          {withDocs.map((d) => (
+            <div key={d.id} className="flex items-center justify-between gap-3 py-2.5">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <i className={`${docIconFor(d)} shrink-0 text-brand dark:text-brand-light`} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm">{d.document!.name}</p>
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-400">{d.name}</p>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <a href={d.document!.url} target="_blank" rel="noopener noreferrer" className="btn-secondary">
+                  Open
+                </a>
+                <button
+                  type="button"
+                  className="rounded-md p-1.5 text-status-flagged hover:bg-gray-100 dark:hover:bg-white/10"
+                  title="Remove document"
+                  onClick={() => onRemove(d.id)}
+                >
+                  <i className="fa-solid fa-trash text-xs" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -247,15 +376,16 @@ export default function DocumentsPage() {
     await load();
   }
 
-  async function handleSaveLink(id: string, url: string, name: string) {
-    await api.post(`/api/departments/${id}/document/link`, { url, name: name || undefined });
+  async function handleSaveLink(departmentId: string, url: string, title: string) {
+    await api.post(`/api/departments/${departmentId}/document/link`, { url, name: title || undefined });
     await load();
   }
 
-  async function handleUploadFile(id: string, file: File) {
+  async function handleUploadFile(departmentId: string, file: File, title: string) {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${API_URL}/api/departments/${id}/document/upload`, {
+    if (title) formData.append('name', title);
+    const res = await fetch(`${API_URL}/api/departments/${departmentId}/document/upload`, {
       method: 'POST',
       credentials: 'include',
       body: formData,
@@ -267,8 +397,8 @@ export default function DocumentsPage() {
     await load();
   }
 
-  async function handleRemoveDocument(id: string) {
-    await api.delete(`/api/departments/${id}/document`);
+  async function handleRemoveDocument(departmentId: string) {
+    await api.delete(`/api/departments/${departmentId}/document`);
     await load();
   }
 
@@ -313,13 +443,20 @@ export default function DocumentsPage() {
         </div>
       </div>
 
+      {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
+
+      {view === 'manage' && canManage && (
+        <>
+          <AddReportPanel departments={departments} onSaveLink={handleSaveLink} onUploadFile={handleUploadFile} />
+          <AllUploadedFiles departments={departments} onRefresh={load} onRemove={handleRemoveDocument} />
+        </>
+      )}
+
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="page-title">Department List</h2>
           <p className="page-subtitle">
-            {view === 'manage'
-              ? 'Share a link or upload a file for each department.'
-              : 'Quick access to every active department report.'}
+            {view === 'manage' ? 'Add, edit, or remove departments.' : 'Quick access to every active department report.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -334,7 +471,6 @@ export default function DocumentsPage() {
         </div>
       </div>
 
-      {error && <p className="mb-4 text-sm text-status-flagged">{error}</p>}
       {showCreate && (
         <div className="mb-6">
           <DepartmentForm onSave={handleCreate} onCancel={() => setShowCreate(false)} />
@@ -405,20 +541,8 @@ export default function DocumentsPage() {
 
                 <p className="flex-1 text-xs text-gray-500 dark:text-gray-400">{department.description}</p>
 
-                {view === 'manage' && canManage ? (
-                  <DocumentPanel
-                    department={department}
-                    onSaveLink={(url, name) => handleSaveLink(department.id, url, name)}
-                    onUploadFile={(file) => handleUploadFile(department.id, file)}
-                    onRemoveDocument={() => handleRemoveDocument(department.id)}
-                  />
-                ) : department.document ? (
-                  <a
-                    href={department.document.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-primary w-full justify-center"
-                  >
+                {department.document ? (
+                  <a href={department.document.url} target="_blank" rel="noopener noreferrer" className="btn-primary w-full justify-center">
                     Open
                   </a>
                 ) : (
