@@ -238,7 +238,7 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
-          <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
+          <select className="input w-full sm:w-40" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>
                 {new Date(2000, m - 1, 1).toLocaleString(undefined, { month: 'long' })}
