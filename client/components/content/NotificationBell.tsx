@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, API_URL } from '@/lib/api';
 import Avatar from '@/components/Avatar';
 import Toast from '@/components/Toast';
 import { playNotificationSound } from '@/lib/notificationSound';
@@ -165,8 +165,22 @@ export default function NotificationBell() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 60000);
+    // A slower safety-net poll — the EventSource below is what makes new notifications show up
+    // instantly; this just re-syncs in case that connection ever drops or never connects (e.g. a
+    // proxy that buffers SSE), so nothing is ever missed for longer than this interval.
+    const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
+  }, [load]);
+
+  // Pushed a "something changed" nudge the moment the server persists a new notification for this
+  // user (see server/src/utils/notificationBus.js) — reacting to it triggers an immediate refetch
+  // instead of waiting for the next poll. The browser's EventSource retries on its own if the
+  // connection drops, so no manual reconnect logic is needed here.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') return;
+    const source = new EventSource(`${API_URL}/api/notifications/stream`, { withCredentials: true });
+    source.onmessage = () => void load();
+    return () => source.close();
   }, [load]);
 
   // Relative labels advance even if the network poll is delayed or returns identical data.
