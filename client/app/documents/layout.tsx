@@ -1,6 +1,6 @@
 'use client';
 
-import AuthGuard from '@/components/AuthGuard';
+import RoleGuard from '@/components/RoleGuard';
 import AppShell from '@/components/AppShell';
 import NotificationBell from '@/components/content/NotificationBell';
 import RefreshButton from '@/components/content/RefreshButton';
@@ -17,7 +17,7 @@ export default function DocumentsLayout({ children }: { children: React.ReactNod
   return (
     <ThemeProvider>
       <ThemeScope>
-        <AuthGuard>
+        <RoleGuard role={['admin', 'super_admin']}>
           <AppShell
             navItems={navItems}
             headerActions={
@@ -30,7 +30,7 @@ export default function DocumentsLayout({ children }: { children: React.ReactNod
           >
             {children}
           </AppShell>
-        </AuthGuard>
+        </RoleGuard>
       </ThemeScope>
     </ThemeProvider>
   );

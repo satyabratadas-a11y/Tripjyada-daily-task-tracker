@@ -5,7 +5,31 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import Avatar from '@/components/Avatar';
 import Toast from '@/components/Toast';
+import { playNotificationSound } from '@/lib/notificationSound';
 import type { ContentNotification } from '@/lib/content-types';
+
+type NotificationFilter = 'all' | 'today' | 'month';
+
+const FILTER_OPTIONS: { key: NotificationFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'today', label: 'Today' },
+  { key: 'month', label: 'This month' },
+];
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function isSameMonth(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
+function matchesFilter(notification: ContentNotification, filter: NotificationFilter, now: number) {
+  if (filter === 'all') return true;
+  const created = new Date(notification.createdAt);
+  const reference = new Date(now);
+  return filter === 'today' ? isSameDay(created, reference) : isSameMonth(created, reference);
+}
 
 function timeAgo(iso: string, now: number) {
   const timestamp = new Date(iso).getTime();
@@ -108,13 +132,24 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(true);
   const [activeToast, setActiveToast] = useState<ContentNotification | null>(null);
   const [relativeTimeNow, setRelativeTimeNow] = useState(() => Date.now());
+  const [filter, setFilter] = useState<NotificationFilter>('all');
   const ref = useRef<HTMLDivElement>(null);
+  // Seen ids from the previous poll — null until the first load completes, so a fresh page load
+  // (which may already have unread notifications waiting) never chimes on mount, only genuinely
+  // new arrivals between polls do.
+  const seenIdsRef = useRef<Set<string> | null>(null);
 
   const load = useCallback(async () => {
     try {
       const data = await api.get<{ notifications: ContentNotification[]; unreadCount: number }>('/api/notifications');
       setNotifications(data.notifications);
       setUnreadCount(data.unreadCount);
+
+      if (seenIdsRef.current) {
+        const hasNewUnread = data.notifications.some((n) => !n.read && !seenIdsRef.current!.has(n.id));
+        if (hasNewUnread) playNotificationSound();
+      }
+      seenIdsRef.current = new Set(data.notifications.map((n) => n.id));
 
       // Toast at most one alert per poll, and only ever once per id (ids already carry a day key
       // for the reminder types, so this naturally re-arms the next calendar day) — a localStorage
@@ -191,6 +226,8 @@ export default function NotificationBell() {
     }
   }
 
+  const filteredNotifications = notifications.filter((n) => matchesFilter(n, filter, relativeTimeNow));
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -219,13 +256,33 @@ export default function NotificationBell() {
               </button>
             )}
           </div>
+          <div className="flex gap-1.5 border-b border-gray-100 px-4 py-2 dark:border-white/10">
+            {FILTER_OPTIONS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setFilter(option.key)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  filter === option.key
+                    ? 'bg-brand text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           <div className="max-h-[min(32rem,70vh)] overflow-y-auto">
             {loading ? (
               <p className="p-4 text-center text-sm text-gray-500">Loading…</p>
             ) : notifications.length === 0 ? (
               <p className="p-4 text-center text-sm text-gray-500">You&apos;re all caught up.</p>
+            ) : filteredNotifications.length === 0 ? (
+              <p className="p-4 text-center text-sm text-gray-500">
+                No notifications {filter === 'today' ? 'today' : 'this month'}.
+              </p>
             ) : (
-              notifications.map((n) => (
+              filteredNotifications.map((n) => (
                 <button
                   key={n.id}
                   type="button"
