@@ -126,6 +126,17 @@ export interface Department {
   updatedAt: string;
 }
 
+export interface Influencer {
+  id: string;
+  name: string;
+  influencerId: string;
+  niche: string;
+  phone: string;
+  remarks: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SuperAdminPlatformMetrics {
   totalUsers: number;
   activeUsers: number;

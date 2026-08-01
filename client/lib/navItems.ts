@@ -12,6 +12,7 @@ const BASE_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/search', label: 'Task Search', icon: 'fa-solid fa-magnifying-glass' },
   { href: '/admin/projects', label: 'Projects', icon: 'fa-solid fa-diagram-project' },
   { href: '/admin/attendance', label: 'Attendance', icon: 'fa-solid fa-map-location-dot' },
+  { href: '/admin/influencers', label: 'Influencers', icon: 'fa-solid fa-hashtag' },
   { href: '/admin/my-today', label: 'My Today', icon: 'fa-solid fa-user-clock' },
   { href: '/admin/my-log', label: 'My Monthly Log', icon: 'fa-solid fa-calendar-days' },
   { href: '/admin/dashboard', label: 'Dashboard', icon: 'fa-solid fa-gauge-high' },
