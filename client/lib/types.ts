@@ -96,10 +96,11 @@ export interface Contact {
   state: string;
   pincode: string;
   notes: string;
-  rawOcrText: string;
-  imageUrl: string;
-  backImageUrl: string;
-  imagePublicId: string;
+  // Omitted from the paginated list response (see contact.controller.js listAll) — only present
+  // after fetching the full record via GET /api/contacts/:id.
+  rawOcrText?: string;
+  imageUrl?: string;
+  backImageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

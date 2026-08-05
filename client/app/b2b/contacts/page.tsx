@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, ApiError, downloadUrl } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { splitContactValues, formatFullAddress } from '@/lib/contactFormat';
@@ -27,12 +27,18 @@ function MultiValue({ value }: { value?: string }) {
   );
 }
 
+const PAGE_SIZE = 25;
+
 export default function MyContactsPage() {
   const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<Contact | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [fullImage, setFullImage] = useState('');
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
@@ -41,33 +47,42 @@ export default function MyContactsPage() {
     return agentId(c) === user?.id;
   }
 
-  const filteredContacts = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return contacts.filter((c) => {
-      if (dateFilter && new Date(c.createdAt).toISOString().slice(0, 10) !== dateFilter) return false;
-      if (!q) return true;
-      return [c.name, c.company, c.phone, c.email, c.address, c.state, c.pincode, agentName(c)].some((field) =>
-        field?.toLowerCase().includes(q)
-      );
-    });
-  }, [contacts, search, dateFilter]);
-
-  async function load() {
-    setLoading(true);
+  async function load(q: string, date: string, pageNum: number, append: boolean) {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     setError('');
     try {
-      const { contacts } = await api.get<{ contacts: Contact[] }>('/api/contacts');
-      setContacts(contacts);
+      const params = new URLSearchParams({ page: String(pageNum), limit: String(PAGE_SIZE) });
+      if (q) params.set('q', q);
+      if (date) params.set('date', date);
+      const { contacts: newContacts, hasMore: more } = await api.get<{ contacts: Contact[]; hasMore: boolean }>(
+        `/api/contacts?${params.toString()}`
+      );
+      setContacts((prev) => (append ? [...prev, ...newContacts] : newContacts));
+      setHasMore(more);
+      setPage(pageNum);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load contacts');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }
 
+  // Search/date changes reset to page 1 and re-query the server (rather than filtering the already
+  // loaded page) — otherwise typing a search term would only ever search within whatever page
+  // "Load more" had reached so far. Debounced so each keystroke doesn't fire its own request.
   useEffect(() => {
-    load();
-  }, []);
+    const handle = setTimeout(() => {
+      load(search, dateFilter, 1, false);
+    }, 300);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, dateFilter]);
+
+  function handleLoadMore() {
+    load(search, dateFilter, page + 1, true);
+  }
 
   async function handleDelete(id: string) {
     if (!window.confirm('Delete this contact? This cannot be undone.')) return;
@@ -77,6 +92,21 @@ export default function MyContactsPage() {
       if (selected?._id === id) setSelected(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to delete contact');
+    }
+  }
+
+  // The list response omits photos (see contact.controller.js listAll) to keep it fast, so opening
+  // a row fetches the full record on demand rather than reading photos off the already-loaded row.
+  async function openContact(c: Contact) {
+    setSelected(c);
+    setDetailLoading(true);
+    try {
+      const { contact } = await api.get<{ contact: Contact }>(`/api/contacts/${c._id}`);
+      setSelected(contact);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to load contact details');
+    } finally {
+      setDetailLoading(false);
     }
   }
 
@@ -100,7 +130,7 @@ export default function MyContactsPage() {
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="input max-w-xs text-sm"
-          placeholder="Search name, phone, company, address, agent…"
+          placeholder="Search name, phone, company, address…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -129,15 +159,15 @@ export default function MyContactsPage() {
       {loading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : contacts.length === 0 ? (
-        <p className="text-sm text-gray-500">No contacts saved yet — scan a card to get started.</p>
-      ) : filteredContacts.length === 0 ? (
-        <p className="text-sm text-gray-500">No contacts match your filters.</p>
+        <p className="text-sm text-gray-500">
+          {search || dateFilter ? 'No contacts match your filters.' : 'No contacts saved yet — scan a card to get started.'}
+        </p>
       ) : (
         <>
           {/* Mobile: one card per contact */}
           <div className="space-y-3 sm:hidden">
-            {filteredContacts.map((c) => (
-              <div key={c._id} className="card cursor-pointer" onClick={() => setSelected(c)}>
+            {contacts.map((c) => (
+              <div key={c._id} className="card cursor-pointer" onClick={() => openContact(c)}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-medium text-gray-900 dark:text-gray-100">{c.name || 'Unnamed'}</p>
@@ -207,11 +237,11 @@ export default function MyContactsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredContacts.map((c) => (
+                {contacts.map((c) => (
                   <tr
                     key={c._id}
                     className="cursor-pointer border-t border-gray-100 align-top dark:border-white/10"
-                    onClick={() => setSelected(c)}
+                    onClick={() => openContact(c)}
                   >
                     <td className="whitespace-nowrap p-2 text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
                     <td className="p-2 font-medium text-gray-900 dark:text-gray-100">{c.name || 'Unnamed'}</td>
@@ -243,6 +273,14 @@ export default function MyContactsPage() {
               </tbody>
             </table>
           </div>
+
+          {hasMore && (
+            <div className="mt-4 flex justify-center">
+              <button type="button" className="btn-secondary" onClick={handleLoadMore} disabled={loadingMore}>
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -266,7 +304,11 @@ export default function MyContactsPage() {
                field) — thumbnails are small below so a normal card never triggers it. */}
             <div className="grid grid-cols-1 gap-5 overflow-y-auto p-5 sm:grid-cols-2">
               <div>
-                {selected.imageUrl ? (
+                {detailLoading ? (
+                  <div className="flex h-28 w-28 items-center justify-center rounded-lg border border-dashed border-gray-300 text-gray-400 dark:border-white/10">
+                    <i className="fa-solid fa-spinner fa-spin" />
+                  </div>
+                ) : selected.imageUrl ? (
                   <>
                     <p className="mb-2 text-xs text-gray-500">Click a photo to view full size</p>
                     <div className="flex gap-3">
@@ -274,14 +316,14 @@ export default function MyContactsPage() {
                         src={cloudinaryThumb(selected.imageUrl, 112)}
                         alt={selected.name || 'Business card'}
                         className="h-28 w-28 cursor-pointer rounded-lg border border-gray-200 object-cover transition hover:opacity-80 dark:border-white/10"
-                        onClick={() => setFullImage(selected.imageUrl)}
+                        onClick={() => setFullImage(selected.imageUrl || '')}
                       />
                       {selected.backImageUrl && (
                         <img
                           src={cloudinaryThumb(selected.backImageUrl, 112)}
                           alt="Back of business card"
                           className="h-28 w-28 cursor-pointer rounded-lg border border-gray-200 object-cover transition hover:opacity-80 dark:border-white/10"
-                          onClick={() => setFullImage(selected.backImageUrl)}
+                          onClick={() => setFullImage(selected.backImageUrl || '')}
                         />
                       )}
                     </div>
