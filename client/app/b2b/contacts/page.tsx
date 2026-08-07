@@ -15,6 +15,11 @@ function agentId(c: Contact) {
   return typeof c.capturedBy === 'object' ? c.capturedBy._id : c.capturedBy;
 }
 
+interface Agent {
+  id: string;
+  name: string;
+}
+
 function MultiValue({ value }: { value?: string }) {
   const parts = splitContactValues(value);
   if (parts.length === 0) return null;
@@ -42,12 +47,35 @@ export default function MyContactsPage() {
   const [fullImage, setFullImage] = useState('');
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [agentFilter, setAgentFilter] = useState('');
+  const [agents, setAgents] = useState<Agent[]>([]);
 
   function isOwn(c: Contact) {
     return agentId(c) === user?.id;
   }
 
-  async function load(q: string, date: string, pageNum: number, append: boolean) {
+  // Distinct list of agents who've actually captured a contact — used for the "filter/download by
+  // employee" picker. Loaded once; the shared contact pool doesn't need this to stay live-updated
+  // within a single visit to the page.
+  useEffect(() => {
+    api
+      .get<{ agents: Agent[] }>('/api/contacts/agents')
+      .then(({ agents: list }) => setAgents(list))
+      .catch(() => {
+        // Non-fatal — the employee filter just won't have options; search/date filtering still works.
+      });
+  }, []);
+
+  function exportParams() {
+    const params = new URLSearchParams();
+    if (search) params.set('q', search);
+    if (dateFilter) params.set('date', dateFilter);
+    if (agentFilter) params.set('agentId', agentFilter);
+    const qs = params.toString();
+    return qs ? `?${qs}` : '';
+  }
+
+  async function load(q: string, date: string, agent: string, pageNum: number, append: boolean) {
     if (append) setLoadingMore(true);
     else setLoading(true);
     setError('');
@@ -55,6 +83,7 @@ export default function MyContactsPage() {
       const params = new URLSearchParams({ page: String(pageNum), limit: String(PAGE_SIZE) });
       if (q) params.set('q', q);
       if (date) params.set('date', date);
+      if (agent) params.set('agentId', agent);
       const { contacts: newContacts, hasMore: more } = await api.get<{ contacts: Contact[]; hasMore: boolean }>(
         `/api/contacts?${params.toString()}`
       );
@@ -69,19 +98,19 @@ export default function MyContactsPage() {
     }
   }
 
-  // Search/date changes reset to page 1 and re-query the server (rather than filtering the already
-  // loaded page) — otherwise typing a search term would only ever search within whatever page
-  // "Load more" had reached so far. Debounced so each keystroke doesn't fire its own request.
+  // Search/date/agent changes reset to page 1 and re-query the server (rather than filtering the
+  // already loaded page) — otherwise typing a search term would only ever search within whatever
+  // page "Load more" had reached so far. Debounced so each keystroke doesn't fire its own request.
   useEffect(() => {
     const handle = setTimeout(() => {
-      load(search, dateFilter, 1, false);
+      load(search, dateFilter, agentFilter, 1, false);
     }, 300);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, dateFilter]);
+  }, [search, dateFilter, agentFilter]);
 
   function handleLoadMore() {
-    load(search, dateFilter, page + 1, true);
+    load(search, dateFilter, agentFilter, page + 1, true);
   }
 
   async function handleDelete(id: string) {
@@ -122,7 +151,7 @@ export default function MyContactsPage() {
           <h1 className="page-title">B2B contacts</h1>
           <p className="text-sm text-gray-500">Business cards captured by every B2B agent — shared, not just your own.</p>
         </div>
-        <a href={downloadUrl('/api/contacts/export')} className="btn-secondary text-xs">
+        <a href={downloadUrl(`/api/contacts/export${exportParams()}`)} className="btn-secondary text-xs">
           <i className="fa-solid fa-file-excel" /> Download Excel
         </a>
       </div>
@@ -140,13 +169,26 @@ export default function MyContactsPage() {
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
         />
-        {(search || dateFilter) && (
+        <select
+          className="input max-w-[12rem] text-sm"
+          value={agentFilter}
+          onChange={(e) => setAgentFilter(e.target.value)}
+        >
+          <option value="">All employees</option>
+          {agents.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
+        {(search || dateFilter || agentFilter) && (
           <button
             type="button"
             className="btn-secondary text-xs"
             onClick={() => {
               setSearch('');
               setDateFilter('');
+              setAgentFilter('');
             }}
           >
             Clear
@@ -160,7 +202,9 @@ export default function MyContactsPage() {
         <p className="text-sm text-gray-500">Loading…</p>
       ) : contacts.length === 0 ? (
         <p className="text-sm text-gray-500">
-          {search || dateFilter ? 'No contacts match your filters.' : 'No contacts saved yet — scan a card to get started.'}
+          {search || dateFilter || agentFilter
+            ? 'No contacts match your filters.'
+            : 'No contacts saved yet — scan a card to get started.'}
         </p>
       ) : (
         <>

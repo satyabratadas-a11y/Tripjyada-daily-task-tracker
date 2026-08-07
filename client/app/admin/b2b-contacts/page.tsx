@@ -19,6 +19,11 @@ function MultiValue({ value }: { value?: string }) {
   );
 }
 
+interface Agent {
+  id: string;
+  name: string;
+}
+
 const PAGE_SIZE = 25;
 
 export default function B2BContactsAdminPage() {
@@ -29,17 +34,39 @@ export default function B2BContactsAdminPage() {
   const [page, setPage] = useState(1);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [agentFilter, setAgentFilter] = useState('');
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [selected, setSelected] = useState<Contact | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [fullImage, setFullImage] = useState('');
 
-  async function load(q: string, pageNum: number, append: boolean) {
+  // Distinct list of agents who've actually captured a contact — used for the "filter/download by
+  // employee" picker.
+  useEffect(() => {
+    api
+      .get<{ agents: Agent[] }>('/api/contacts/agents')
+      .then(({ agents: list }) => setAgents(list))
+      .catch(() => {
+        // Non-fatal — the employee filter just won't have options; search filtering still works.
+      });
+  }, []);
+
+  function exportParams() {
+    const params = new URLSearchParams();
+    if (search) params.set('q', search);
+    if (agentFilter) params.set('agentId', agentFilter);
+    const qs = params.toString();
+    return qs ? `?${qs}` : '';
+  }
+
+  async function load(q: string, agent: string, pageNum: number, append: boolean) {
     if (append) setLoadingMore(true);
     else setLoading(true);
     setError('');
     try {
       const params = new URLSearchParams({ page: String(pageNum), limit: String(PAGE_SIZE) });
       if (q) params.set('q', q);
+      if (agent) params.set('agentId', agent);
       const { contacts: newContacts, hasMore: more } = await api.get<{ contacts: Contact[]; hasMore: boolean }>(
         `/api/contacts?${params.toString()}`
       );
@@ -54,17 +81,21 @@ export default function B2BContactsAdminPage() {
     }
   }
 
+  // Covers both the initial load and every employee-filter change — unlike search (submit-on-button,
+  // matching this page's existing pattern), the employee picker re-queries immediately since a
+  // select is already a deliberate, single action.
   useEffect(() => {
-    load('', 1, false);
-  }, []);
+    load(search, agentFilter, 1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentFilter]);
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    load(search, 1, false);
+    load(search, agentFilter, 1, false);
   }
 
   function handleLoadMore() {
-    load(search, page + 1, true);
+    load(search, agentFilter, page + 1, true);
   }
 
   async function handleDelete(id: string) {
@@ -110,21 +141,42 @@ export default function B2BContactsAdminPage() {
           <h1 className="mb-1 page-title">B2B contacts</h1>
           <p className="text-sm text-gray-500">Business cards captured by all B2B agents.</p>
         </div>
-        <a href={downloadUrl('/api/contacts/export')} className="btn-secondary text-xs">
+        <a href={downloadUrl(`/api/contacts/export${exportParams()}`)} className="btn-secondary text-xs">
           <i className="fa-solid fa-file-excel" /> Download Excel
         </a>
       </div>
 
-      <form onSubmit={handleSearchSubmit} className="mb-4 flex gap-2">
+      <form onSubmit={handleSearchSubmit} className="mb-4 flex flex-wrap gap-2">
         <input
           className="input max-w-xs"
           placeholder="Search name or company…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <select className="input max-w-[12rem]" value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)}>
+          <option value="">All employees</option>
+          {agents.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
         <button type="submit" className="btn-secondary">
           Search
         </button>
+        {(search || agentFilter) && (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              setSearch('');
+              setAgentFilter('');
+              load('', '', 1, false);
+            }}
+          >
+            Clear
+          </button>
+        )}
       </form>
 
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
