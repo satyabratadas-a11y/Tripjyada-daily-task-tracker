@@ -11,6 +11,13 @@ function formatValue(value: unknown) {
   return String(value);
 }
 
+// A raw Mongo ObjectId (e.g. metadata.employeeId, stored alongside a human-readable
+// employeeName/capturedBy pair for precise internal correlation) reads as meaningless noise next
+// to the name that already identifies the same thing — never worth showing an admin.
+function isRawObjectId(value: unknown) {
+  return typeof value === 'string' && /^[0-9a-f]{24}$/i.test(value);
+}
+
 function formatLabel(value: string) {
   return value
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -317,7 +324,7 @@ export default function AdminAuditPage() {
                 {group.entries.map((log) => {
                   const changes = Object.entries(log.changes || {});
                   const metadataEntries = Object.entries(log.metadata || {}).filter(
-                    ([, value]) => value !== null && value !== undefined && value !== ''
+                    ([, value]) => value !== null && value !== undefined && value !== '' && !isRawObjectId(value)
                   );
 
                   return (
