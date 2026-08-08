@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
-import { api, ApiError } from './api';
+import { api, ApiError, setSessionExpiredHandler } from './api';
 import type { User } from './types';
 
 interface AuthState {
@@ -59,6 +59,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // A 401 from any session-gated endpoint (see lib/api.ts) — most commonly the JWT cookie hitting
+  // its 1-day expiry while a tab was left open — means the session is gone no matter which page
+  // triggered it. Clearing the user here is enough: every protected layout already redirects to
+  // /login the instant it sees a null user (AuthGuard/RoleGuard), so this is the one place that
+  // needs to react instead of every page remembering to check for a 401 itself.
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      authGenerationRef.current += 1;
+      setUser(null);
+      setLoading(false);
+    });
+    return () => setSessionExpiredHandler(null);
+  }, []);
 
   return <AuthContext.Provider value={{ user, loading, refresh, completeLogin, logout }}>{children}</AuthContext.Provider>;
 }
