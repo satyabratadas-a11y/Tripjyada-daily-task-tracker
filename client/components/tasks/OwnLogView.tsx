@@ -259,6 +259,7 @@ export default function OwnLogView() {
   const [bulkStatus, setBulkStatus] = useState<Task['memberStatus']>('done');
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkError, setBulkError] = useState('');
+  const [dateSortOrder, setDateSortOrder] = useState<'asc' | 'desc'>('asc');
 
   async function load() {
     setLoading(true);
@@ -284,10 +285,13 @@ export default function OwnLogView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month, year]);
 
-  const filteredTasks = useMemo(
-    () => (selectedDate ? tasks.filter((t) => t.date.slice(0, 10) === selectedDate) : tasks),
-    [tasks, selectedDate]
-  );
+  const filteredTasks = useMemo(() => {
+    const base = selectedDate ? tasks.filter((t) => t.date.slice(0, 10) === selectedDate) : tasks;
+    return [...base].sort((a, b) => {
+      const compare = a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt);
+      return dateSortOrder === 'asc' ? compare : -compare;
+    });
+  }, [tasks, selectedDate, dateSortOrder]);
 
   const stats = useMemo(
     () => [
@@ -445,7 +449,17 @@ export default function OwnLogView() {
                       aria-label="Select all"
                     />
                   </th>
-                  <th>Date</th>
+                  <th>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 hover:text-brand"
+                      onClick={() => setDateSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+                      title={`Sort by date ${dateSortOrder === 'asc' ? 'descending' : 'ascending'}`}
+                    >
+                      Date
+                      <i className={`fa-solid fa-arrow-${dateSortOrder === 'asc' ? 'up' : 'down'} text-[10px]`} />
+                    </button>
+                  </th>
                   <th>Day type</th>
                   <th>Source</th>
                   <th>Task</th>
