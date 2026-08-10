@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError, downloadUrl } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
+import ScanStatsBar from '@/components/b2b/ScanStatsBar';
 import { splitContactValues, formatFullAddress } from '@/lib/contactFormat';
 import { cloudinaryThumb, cloudinaryOptimized } from '@/lib/cloudinaryUrl';
 import type { Contact } from '@/lib/types';
@@ -155,6 +156,8 @@ export default function MyContactsPage() {
           <i className="fa-solid fa-file-excel" /> Download Excel
         </a>
       </div>
+
+      <ScanStatsBar />
 
       <div className="mb-4 flex flex-wrap gap-2">
         <input

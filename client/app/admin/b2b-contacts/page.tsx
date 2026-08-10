@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError, downloadUrl } from '@/lib/api';
 import RoleGuard from '@/components/RoleGuard';
+import ScanStatsBar from '@/components/b2b/ScanStatsBar';
 import { splitContactValues, formatFullAddress } from '@/lib/contactFormat';
 import { cloudinaryThumb, cloudinaryOptimized } from '@/lib/cloudinaryUrl';
 import type { Contact } from '@/lib/types';
@@ -145,6 +146,8 @@ export default function B2BContactsAdminPage() {
           <i className="fa-solid fa-file-excel" /> Download Excel
         </a>
       </div>
+
+      <ScanStatsBar />
 
       <form onSubmit={handleSearchSubmit} className="mb-4 flex flex-wrap gap-2">
         <input
