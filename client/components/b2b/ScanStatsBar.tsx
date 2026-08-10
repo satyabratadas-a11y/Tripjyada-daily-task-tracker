@@ -7,6 +7,8 @@ interface ScanPeriodStats {
   scanned: number;
   saved: number;
   failed: number;
+  manual: number;
+  aiScan: number;
 }
 
 interface AgentScanStats {
@@ -27,6 +29,8 @@ const TILES: { key: keyof ScanPeriodStats; label: string; color: string }[] = [
   { key: 'scanned', label: 'Scanned', color: 'bg-brand' },
   { key: 'saved', label: 'Saved', color: 'bg-status-completed' },
   { key: 'failed', label: 'Failed', color: 'bg-status-flagged' },
+  { key: 'manual', label: 'Manual entry', color: 'bg-gray-400' },
+  { key: 'aiScan', label: 'AI scan', color: 'bg-status-progress' },
 ];
 
 // "Scanned" counts every attempt that reached Vision/Gemini, success or failure — that's what maps
@@ -49,7 +53,7 @@ export default function ScanStatsBar() {
 
   return (
     <div className="mb-4">
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 xl:grid-cols-5">
         {TILES.map((tile) => (
           <div key={tile.key} className="card relative min-w-0 overflow-hidden px-3 py-2.5 sm:px-4 sm:py-3">
             <span className={`absolute inset-y-0 left-0 w-1 ${tile.color}`} />
