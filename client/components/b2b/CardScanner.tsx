@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { API_URL } from '@/lib/api';
+import { requestCardScan } from '@/lib/cardScanRequest';
 import { MAX_IMAGE_DIMENSION, IMAGE_QUALITY, downscaleImage } from '@/lib/imageResize';
 
 type FormState = {
@@ -76,6 +77,7 @@ type Step = 'capture-front' | 'ask-back' | 'capture-back' | 'review';
 type Side = 'front' | 'back';
 type TorchCapabilities = MediaTrackCapabilities & { torch?: boolean };
 type TorchConstraintSet = MediaTrackConstraintSet & { torch: boolean };
+const MAX_FALLBACK_IMAGE_BYTES = 6 * 1024 * 1024;
 
 export default function CardScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -83,6 +85,10 @@ export default function CardScanner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const unmountedRef = useRef(false);
+  const capturePendingRef = useRef(false);
+  const scanAbortRef = useRef<AbortController | null>(null);
+  const scanGenerationRef = useRef(0);
+  const scanInFlightRef = useRef(false);
   // Bumped on every startCamera() call so an older, superseded call can tell it's no longer the
   // "current" one once its getUserMedia() promise resolves (React's dev-mode double-invoked
   // effects, or a fast double-tap on a button, can otherwise start two overlapping requests —
@@ -100,6 +106,7 @@ export default function CardScanner() {
   // button, so only this first one needs the gate.
   const [cameraRequested, setCameraRequested] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [cameraReady, setCameraReady] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [torchError, setTorchError] = useState('');
@@ -115,6 +122,7 @@ export default function CardScanner() {
   const [error, setError] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
+  const [scanFailed, setScanFailed] = useState(false);
 
   useEffect(() => {
     unmountedRef.current = false;
@@ -124,13 +132,19 @@ export default function CardScanner() {
     // Belt-and-braces beyond React's own cleanup: releases the camera immediately if the tab is
     // hidden/closed/navigated away from in a way that doesn't cleanly unmount this component.
     const releaseOnHide = () => {
-      if (document.visibilityState === 'hidden') stopCamera();
+      if (document.visibilityState === 'hidden') {
+        stopCamera();
+        // When the user returns, show the explicit Enable camera action instead of a stopped black
+        // preview with no way to restart it.
+        setCameraRequested(false);
+      }
     };
     document.addEventListener('visibilitychange', releaseOnHide);
     window.addEventListener('pagehide', stopCamera);
 
     return () => {
       unmountedRef.current = true;
+      cancelScan(false);
       stopCamera();
       document.removeEventListener('visibilitychange', releaseOnHide);
       window.removeEventListener('pagehide', stopCamera);
@@ -138,12 +152,23 @@ export default function CardScanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // State transitions mount the <video> first; the effect then requests the stream. Starting the
+  // camera directly inside retake/add-back handlers can resolve before React has mounted the new
+  // video element, leaving a live stream with nowhere to display it.
+  useEffect(() => {
+    const inCameraStep = step === 'capture-front' || step === 'capture-back';
+    if (cameraRequested && inCameraStep) startCamera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraRequested, step]);
+
   function requestCamera() {
     setCameraRequested(true);
-    startCamera();
   }
 
   async function startCamera() {
+    // Invalidates and releases both an existing stream and any getUserMedia request that is still
+    // pending before this new generation begins.
+    stopCamera();
     const myGeneration = ++cameraGenerationRef.current;
     setCameraError('');
     setTorchError('');
@@ -157,9 +182,10 @@ export default function CardScanner() {
       setCameraError('This browser does not support camera access.');
       return;
     }
-    // Guard against ever having two live streams at once (e.g. a stray double-click on "Try
-    // again") — always release whatever's currently held before requesting a new one.
-    stopCamera();
+    // Gives React one frame to mount the video after clearing a camera error (or entering a new
+    // capture step) before a previously-approved getUserMedia request can resolve immediately.
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    if (unmountedRef.current || cameraGenerationRef.current !== myGeneration) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       // Stale if we've unmounted, OR a newer startCamera() call has started since this one did
@@ -178,8 +204,14 @@ export default function CardScanner() {
         // Can still legitimately reject if superseded again between the checks above and here —
         // that's not an error worth surfacing, the stream is already being torn down elsewhere.
         await videoRef.current.play().catch(() => {});
+        if (unmountedRef.current || cameraGenerationRef.current !== myGeneration) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        setCameraReady(videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0);
       }
     } catch (err) {
+      if (unmountedRef.current || cameraGenerationRef.current !== myGeneration) return;
       const name = err instanceof DOMException ? err.name : '';
       if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
         setCameraError(
@@ -197,14 +229,24 @@ export default function CardScanner() {
   }
 
   function stopCamera() {
+    // Stopping must also invalidate a getUserMedia promise that has not resolved yet, otherwise it
+    // can resurrect the camera after capture, navigation, or a page-hide event.
+    cameraGenerationRef.current += 1;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    capturePendingRef.current = false;
+    setCameraReady(false);
     setTorchSupported(false);
     setTorchOn(false);
     setTorchError('');
     // Stopping the tracks releases the hardware, but on some mobile browsers the camera-in-use
     // indicator doesn't clear until the <video> element's srcObject is detached too.
     if (videoRef.current) videoRef.current.srcObject = null;
+  }
+
+  function handleVideoReady() {
+    const video = videoRef.current;
+    setCameraReady(Boolean(streamRef.current && video && video.videoWidth > 0 && video.videoHeight > 0));
   }
 
   async function toggleTorch() {
@@ -225,7 +267,16 @@ export default function CardScanner() {
     }
   }
 
+  function cancelScan(updateState = true) {
+    scanGenerationRef.current += 1;
+    scanAbortRef.current?.abort();
+    scanAbortRef.current = null;
+    scanInFlightRef.current = false;
+    if (updateState) setScanning(false);
+  }
+
   function retake() {
+    cancelScan();
     if (frontUrl) URL.revokeObjectURL(frontUrl);
     if (backUrl) URL.revokeObjectURL(backUrl);
     setFrontBlob(null);
@@ -236,8 +287,10 @@ export default function CardScanner() {
     setConfirmed(false);
     setError('');
     setDuplicate(null);
+    setScanFailed(false);
     setStep('capture-front');
-    startCamera();
+    // Upload-only users stay behind the explicit Enable camera gate; camera users are restarted by
+    // the [cameraRequested, step] effect after the new <video> has mounted.
   }
 
   function handleCaptured(side: Side, blob: Blob) {
@@ -258,18 +311,23 @@ export default function CardScanner() {
   function capture() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!video || !canvas || !cameraReady || !video.videoWidth || !video.videoHeight || capturePendingRef.current) return;
+    capturePendingRef.current = true;
     // Downscale directly at capture time (rather than draw full-res then resize after) — no need
     // for an intermediate full-resolution blob when this is the only place it'd be used.
     const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(video.videoWidth, video.videoHeight));
     canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
     canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      capturePendingRef.current = false;
+      return;
+    }
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob(
       (blob) => {
+        capturePendingRef.current = false;
         if (!blob) return;
         handleCaptured(step === 'capture-back' ? 'back' : 'front', blob);
       },
@@ -285,22 +343,26 @@ export default function CardScanner() {
 
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    const side = uploadSideRef.current;
     e.target.value = '';
     if (!file) return;
     // Uploaded files (unlike camera captures) can be arbitrarily large — a modern phone photo is
     // often 4000px+ wide — so these always need downscaling before they're sent anywhere.
     try {
       const resized = await downscaleImage(file);
-      handleCaptured(uploadSideRef.current, resized);
+      handleCaptured(side, resized);
     } catch {
-      handleCaptured(uploadSideRef.current, file);
+      if (file.size > MAX_FALLBACK_IMAGE_BYTES) {
+        setError('This photo could not be optimized and is too large to upload. Choose a JPG/PNG under 6 MB or take a new photo.');
+        return;
+      }
+      handleCaptured(side, file);
     }
   }
 
   function addBackSide() {
     setCameraRequested(true);
     setStep('capture-back');
-    startCamera();
   }
 
   function skipBackSide() {
@@ -309,39 +371,43 @@ export default function CardScanner() {
   }
 
   async function scanCard(front: Blob, back: Blob | null) {
+    if (scanInFlightRef.current) return;
+    const generation = ++scanGenerationRef.current;
+    const controller = new AbortController();
+    scanAbortRef.current = controller;
+    scanInFlightRef.current = true;
     setScanning(true);
     setError('');
     setDuplicate(null);
+    setScanFailed(false);
     try {
       const formData = new FormData();
       formData.append('image', front, 'card-front.jpg');
       if (back) formData.append('backImage', back, 'card-back.jpg');
 
-      const res = await fetch(`${API_URL}/api/contacts/scan`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || 'Could not read the card');
-      }
-      const { fields, duplicate: dup } = (await res.json()) as {
+      const { fields, duplicate: dup } = await requestCardScan<{
         fields: Partial<FormState>;
         duplicate: DuplicateInfo | null;
-      };
+      }>(formData, controller.signal);
+      if (scanGenerationRef.current !== generation) return;
       setForm((f) => {
         const next = { ...f };
         for (const key of SCAN_FIELDS) {
-          if (fields[key]) next[key] = fields[key] as string;
+          if (typeof fields[key] === 'string' && fields[key]) next[key] = fields[key];
         }
         return next;
       });
       setDuplicate(dup || null);
     } catch (err) {
+      if (scanGenerationRef.current !== generation) return;
+      setScanFailed(true);
       setError(err instanceof Error ? err.message : 'Could not auto-read the card — fill the fields in manually below.');
     } finally {
-      setScanning(false);
+      if (scanGenerationRef.current === generation) {
+        scanAbortRef.current = null;
+        scanInFlightRef.current = false;
+        setScanning(false);
+      }
     }
   }
 
@@ -354,6 +420,7 @@ export default function CardScanner() {
     if (!frontBlob) return;
     setSaving(true);
     setError('');
+    setScanFailed(false);
     try {
       const formData = new FormData();
       formData.append('image', frontBlob, 'card-front.jpg');
@@ -423,7 +490,14 @@ export default function CardScanner() {
               <p className="text-sm text-red-600">{cameraError}</p>
             ) : (
               <div className="relative overflow-hidden rounded-lg bg-black">
-                <video ref={videoRef} muted playsInline className="w-full" />
+                <video
+                  ref={videoRef}
+                  muted
+                  playsInline
+                  className="w-full"
+                  onLoadedMetadata={handleVideoReady}
+                  onCanPlay={handleVideoReady}
+                />
                 {torchSupported && (
                   <button
                     type="button"
@@ -524,7 +598,7 @@ export default function CardScanner() {
                   </p>
                 )}
 
-                {error && (
+                {error && scanFailed && (
                   <button type="button" className="btn-secondary w-full" onClick={() => frontBlob && scanCard(frontBlob, backBlob)}>
                     <i className="fa-solid fa-rotate-right" />
                     Retry scan
@@ -542,9 +616,9 @@ export default function CardScanner() {
           {step === 'capture-front' && (
             <>
               {cameraRequested && !cameraError && (
-                <button type="button" className="btn-primary flex-1" onClick={capture}>
+                <button type="button" className="btn-primary flex-1" onClick={capture} disabled={!cameraReady || capturePendingRef.current}>
                   <i className="fa-solid fa-camera" />
-                  Capture card
+                  {cameraReady ? 'Capture card' : 'Starting camera…'}
                 </button>
               )}
               <button type="button" className="btn-secondary flex-1" onClick={() => openUpload('front')}>
@@ -556,9 +630,9 @@ export default function CardScanner() {
           {step === 'capture-back' && (
             <>
               {cameraRequested && !cameraError && (
-                <button type="button" className="btn-primary flex-1" onClick={capture}>
+                <button type="button" className="btn-primary flex-1" onClick={capture} disabled={!cameraReady || capturePendingRef.current}>
                   <i className="fa-solid fa-camera" />
-                  Capture back
+                  {cameraReady ? 'Capture back' : 'Starting camera…'}
                 </button>
               )}
               <button type="button" className="btn-secondary flex-1" onClick={() => openUpload('back')}>

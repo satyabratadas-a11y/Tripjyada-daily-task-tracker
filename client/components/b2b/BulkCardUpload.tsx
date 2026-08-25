@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { API_URL } from '@/lib/api';
+import { requestCardScan } from '@/lib/cardScanRequest';
 import { downscaleImage } from '@/lib/imageResize';
 
 type FormState = {
@@ -90,16 +91,7 @@ async function scanCardRemote(blob: Blob, uploadName: string): Promise<{ fields:
   const formData = new FormData();
   formData.append('image', blob, uploadName);
 
-  const res = await fetch(`${API_URL}/api/contacts/scan`, {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || 'Could not read the card');
-  }
-  return (await res.json()) as { fields: Partial<FormState>; duplicate: DuplicateInfo | null };
+  return requestCardScan<{ fields: Partial<FormState>; duplicate: DuplicateInfo | null }>(formData);
 }
 
 export default function BulkCardUpload() {
